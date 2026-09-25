@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSafeSave } from './useSafeSave';
 import { DateTimeField, DurationField, MoneyField, NumberField } from './fields';
 
 export interface SummaryFormInitial { startedAt: number | null; resultCny: number | null; hands: number | null; durationSec: number | null; note?: string }
@@ -17,13 +18,14 @@ export function SummaryForm({ initial, uncertain = [], onSave, onCancel, cancelL
   const [durationSec, setDurationSec] = useState(initial.durationSec);
   const [note, setNote] = useState(initial.note ?? '');
   const flagged = new Set(uncertain);
+  const { saving, error, run } = useSafeSave();
   const valid = startedAt !== null && resultCny !== null && hands !== null && durationSec !== null;
   return (
     <form
       className="form"
       onSubmit={(e) => {
         e.preventDefault();
-        if (valid) void onSave({ startedAt: startedAt!, resultCny: resultCny!, hands: hands!, durationSec: durationSec!, note: note.trim() || undefined });
+        if (valid) void run(() => onSave({ startedAt: startedAt!, resultCny: resultCny!, hands: hands!, durationSec: durationSec!, note: note.trim() || undefined }));
       }}
     >
       <DateTimeField label="Fecha y hora" value={startedAt} onChange={setStartedAt} />
@@ -34,8 +36,9 @@ export function SummaryForm({ initial, uncertain = [], onSave, onCancel, cancelL
         <span>Nota (opcional)</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
       </label>
+      {error && <p role="alert" className="warning">{error}</p>}
       <div className="btn-row">
-        <button type="submit" className="btn primary" disabled={!valid}>Guardar</button>
+        <button type="submit" className="btn primary" disabled={!valid || saving}>{saving ? 'Guardando…' : 'Guardar'}</button>
         <button type="button" className="btn" onClick={onCancel}>{cancelLabel}</button>
       </div>
     </form>

@@ -5,6 +5,7 @@ import { POSITIONS, STREETS, type HandValues, type Position, type Street } from 
 import type { PartialCard } from '../../parsers/hand';
 import { CardPicker } from './CardPicker';
 import { DateTimeField, MoneyField, NumberField } from './fields';
+import { useSafeSave } from './useSafeSave';
 import { toHandValues, type HandFormState } from './handValidation';
 
 const STREET_LABEL: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn' };
@@ -20,11 +21,12 @@ export function HandForm({ initial, uncertain = [], onSave, onCancel, cancelLabe
   const set = <K extends keyof HandFormState>(k: K, v: HandFormState[K]) => setS((prev) => ({ ...prev, [k]: v }));
   const setAllin = (patch: Partial<HandFormState['allin']>) => setS((prev) => ({ ...prev, allin: { ...prev.allin, ...patch } }));
   const flagged = new Set(uncertain);
+  const { saving, error, run } = useSafeSave();
   const values = toHandValues(s);
   const setCard = (list: 'heroCards' | 'board', i: number, c: PartialCard) => set(list, s[list].map((x, j) => (j === i ? c : x)));
 
   return (
-    <form className="form" onSubmit={(e) => { e.preventDefault(); if (values) void onSave(values); }}>
+    <form className="form" onSubmit={(e) => { e.preventDefault(); if (values) void run(() => onSave(values)); }}>
       <label className={`field ${flagged.has('handId') || !s.handId.trim() ? 'flag' : ''}`}>
         <span>ID de la mano</span>
         <input aria-label="ID de la mano" inputMode="numeric" value={s.handId} onChange={(e) => set('handId', e.target.value)} />
@@ -75,6 +77,7 @@ export function HandForm({ initial, uncertain = [], onSave, onCancel, cancelLabe
             value={s.allin.heroEquity === null ? null : Math.round(s.allin.heroEquity * 100)}
             onChange={(v) => setAllin({ heroEquity: v === null ? null : v / 100 })}
             integer
+            flagged={flagged.has('allin')}
           />
           <NumberField label="Bote disputado ¥" value={s.allin.potContested} onChange={(v) => setAllin({ potContested: v })} flagged={flagged.has('allin')} />
           <NumberField label="Lo que pusiste ¥" value={s.allin.heroInvested} onChange={(v) => setAllin({ heroInvested: v })} flagged={flagged.has('allin')} />
@@ -89,8 +92,9 @@ export function HandForm({ initial, uncertain = [], onSave, onCancel, cancelLabe
         <span>Notas</span>
         <textarea value={s.note} onChange={(e) => set('note', e.target.value)} rows={3} />
       </label>
+      {error && <p role="alert" className="warning">{error}</p>}
       <div className="btn-row">
-        <button type="submit" className="btn primary" disabled={!values}>Guardar</button>
+        <button type="submit" className="btn primary" disabled={!values || saving}>{saving ? 'Guardando…' : 'Guardar'}</button>
         <button type="button" className="btn" onClick={onCancel}>{cancelLabel}</button>
       </div>
     </form>
