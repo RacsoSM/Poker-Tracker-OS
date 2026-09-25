@@ -22,7 +22,7 @@ async function seeded() {
 }
 
 describe('backup', () => {
-  it('exporta e importa (reemplazar) con resultado idÃ©ntico', async () => {
+  it('exporta e importa (reemplazar) con resultado idéntico', async () => {
     const src = await seeded();
     const zip = await exportBackup(src, 123);
     expect(Object.keys(unzipSync(zip))).toContain('data.json');
@@ -53,7 +53,7 @@ describe('backup', () => {
     expect(await dst.chunks.count()).toBe(1);
   });
 
-  it('rechaza copias con imÃ¡genes faltantes', async () => {
+  it('rechaza copias con imágenes faltantes', async () => {
     const src = await seeded();
     const entries = unzipSync(await exportBackup(src));
     const broken = Object.fromEntries(Object.entries(entries).filter(([k]) => !k.startsWith('images/')));

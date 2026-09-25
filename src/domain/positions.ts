@@ -1,6 +1,6 @@
 import type { Position } from './types';
 
-// Asientos en orden desde UTG hasta BB, segÃºn el nÃºmero de jugadores.
+// Asientos en orden desde UTG hasta BB, según el número de jugadores.
 const SEATS: Record<number, Position[]> = {
   3: ['BTN', 'SB', 'BB'],
   4: ['UTG', 'BTN', 'SB', 'BB'],
@@ -10,8 +10,8 @@ const SEATS: Record<number, Position[]> = {
   8: ['UTG', 'UTG+1', 'MP', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
 };
 
-// Antes de que el hÃ©roe actÃºe por primera vez, cada fila de PRE-FLOP es un jugador distinto,
-// asÃ­ que el Ã­ndice de su primera fila es su lugar en el orden de acciÃ³n preflop.
+// Antes de que el héroe actúe por primera vez, cada fila de PRE-FLOP es un jugador distinto,
+// así que el índice de su primera fila es su lugar en el orden de acción preflop.
 export function positionFromPreflopIndex(index: number, nPlayers: number, straddle: boolean): Position | null {
   const seats = SEATS[nPlayers];
   if (!seats || index < 0 || index >= nPlayers) return null;

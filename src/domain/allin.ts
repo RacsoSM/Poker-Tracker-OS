@@ -2,7 +2,7 @@ import { round2 } from './format';
 
 export interface AllinInference { heroInvested: number; potContested: number; ambiguous: boolean }
 
-// Spec Â§4.2: bote e inversiÃ³n a partir de los resultados netos de la columna RIVER.
+// Spec §4.2: bote e inversión a partir de los resultados netos de la columna RIVER.
 export function inferPot(heroResult: number, others: number[], equityPlayers: number): AllinInference {
   const losses = others.filter((r) => r < 0).map((r) => -r);
   const winners = others.filter((r) => r > 0);

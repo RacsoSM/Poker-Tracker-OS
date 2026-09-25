@@ -54,7 +54,7 @@ export async function importBackup(db: PtDb, bytes: Uint8Array, mode: 'replace' 
   try {
     entries = unzipSync(bytes);
   } catch {
-    throw new BackupError('El archivo no es una copia vÃ¡lida (zip daÃ±ado).');
+    throw new BackupError('El archivo no es una copia válida (zip dañado).');
   }
   const raw = entries['data.json'];
   if (!raw) throw new BackupError('La copia no contiene data.json.');
@@ -62,7 +62,7 @@ export async function importBackup(db: PtDb, bytes: Uint8Array, mode: 'replace' 
   try {
     json = JSON.parse(strFromU8(raw));
   } catch {
-    throw new BackupError('data.json estÃ¡ daÃ±ado.');
+    throw new BackupError('data.json está dañado.');
   }
   const parsed = backupZ.safeParse(json);
   if (!parsed.success) throw new BackupError('La copia no tiene el formato esperado.');
