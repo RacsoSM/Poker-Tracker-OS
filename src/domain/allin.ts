@@ -16,6 +16,7 @@ export function inferPot(heroResult: number, others: number[], equityPlayers: nu
     potContested = heroInvested + heroResult;
   }
   const positiveCount = winners.length + (heroResult > 0 ? 1 : 0);
-  const ambiguous = equityPlayers > 2 || Math.abs(heroResult) < 0.005 || positiveCount > 1 || heroInvested === 0;
+  const missingWinner = heroResult < 0 && winners.length === 0;
+  const ambiguous = equityPlayers > 2 || Math.abs(heroResult) < 0.005 || positiveCount > 1 || heroInvested === 0 || missingWinner;
   return { heroInvested: round2(heroInvested), potContested: round2(potContested), ambiguous };
 }

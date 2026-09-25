@@ -44,7 +44,22 @@ describe('parseHand sobre el fixture real', () => {
     expect(d.heroResultCny).toBe(-156.1);
     expect(d.kind).toBe('allin');
     expect(d.allin).toEqual({ street: 'flop', heroEquity: 0.13, potContested: 347.2, heroInvested: 156.1 });
-    expect(d.uncertain).not.toContain('allin');
+    // El OCR leyó el -¥156.10 del héroe con confianza 0: resultado y bote quedan para revisar.
+    expect(d.uncertain).toEqual(expect.arrayContaining(['heroResultCny', 'allin']));
+  });
+
+  it('all-in: si falta el importe de otra fila de RIVER, el bote queda marcado como incierto', () => {
+    const river = ocr.columns.river.filter((w) => w.text !== '191.10' && w.text !== '+¥');
+    const d = parseHand({ ...ocr, columns: { ...ocr.columns, river } }, layout, 'HiTeR2504');
+    expect(d.kind).toBe('allin');
+    expect(d.uncertain).toContain('allin');
+  });
+
+  it('all-in: si el porcentaje del héroe sale solo de la pasada por columna, se marca incierto', () => {
+    const full = ocr.full.filter((w) => w.text !== '13%');
+    const d = parseHand({ ...ocr, full }, layout, 'HiTeR2504');
+    expect(d.kind).toBe('allin');
+    expect(d.uncertain).toContain('allin');
   });
 
   it('héroe inexistente: borrador sin crash, con campos inciertos', () => {

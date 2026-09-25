@@ -18,4 +18,7 @@ describe('inferPot', () => {
     expect(inferPot(0, [0, -2], 2).ambiguous).toBe(true);
     expect(inferPot(20, [20, -40], 2).ambiguous).toBe(true);
   });
+  it('marca ambiguo si el héroe pierde y no se leyó ningún ganador', () => {
+    expect(inferPot(-156.1, [-28, -1, -2], 2).ambiguous).toBe(true);
+  });
 });

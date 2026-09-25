@@ -87,7 +87,8 @@ function rowMoney(words: OcrWord[]): { value: number | null; conf: number } {
 }
 
 // Porcentajes: primero la pasada completa (más fiable, spec §10a), después la de columna.
-function rowPercent(ocr: HandOcr, layout: HandLayout, col: LayoutColumn, row: RowBox): number | null {
+// `fromColumn` indica que salió de la pasada por columna, que ya leyó "3%" por "13%".
+function rowPercent(ocr: HandOcr, layout: HandLayout, col: LayoutColumn, row: RowBox): { value: number; fromColumn: boolean } | null {
   const rect = layout.columns[col].rect;
   const pick = (ws: OcrWord[]) => {
     for (const w of ws) {
@@ -97,7 +98,10 @@ function rowPercent(ocr: HandOcr, layout: HandLayout, col: LayoutColumn, row: Ro
     }
     return null;
   };
-  return pick(ocr.full) ?? pick(ocr.columns[col]);
+  const fromFull = pick(ocr.full);
+  if (fromFull !== null) return { value: fromFull, fromColumn: false };
+  const fromColumn = pick(ocr.columns[col]);
+  return fromColumn === null ? null : { value: fromColumn, fromColumn: true };
 }
 
 function isAboveName(card: LayoutCard, name: OcrWord, s: number): boolean {
@@ -166,7 +170,15 @@ export function parseHand(ocr: HandOcr, layout: HandLayout, heroName: string): H
     const words = columnWords(ocr, layout, street);
     const idx = col.rows.findIndex((row, i) => pcts[i] !== null && words.some((w) => inRow(w, row) && nameMatches(w.text, heroName)));
     if (idx >= 0) {
-      const heroEquity = pcts[idx];
+      const heroEquity = pcts[idx]!.value;
+      if (pcts[idx]!.fromColumn) uncertain.add('allin');
+      // El bote se infiere de las filas del héroe, del mayor ganador y de la mayor pérdida:
+      // si falta alguna fila de RIVER o esas se leyeron con poca confianza, el bote puede estar mal.
+      const known = riverMoney.filter((m) => m.value !== null);
+      const maxWin = known.reduce<(typeof known)[number] | null>((a, m) => (m.value! > 0 && (!a || m.value! > a.value!) ? m : a), null);
+      const maxLoss = known.reduce<(typeof known)[number] | null>((a, m) => (m.value! < 0 && (!a || m.value! < a.value!) ? m : a), null);
+      const used = [heroMoney, maxWin, maxLoss].filter((m) => m !== null);
+      if (known.length < riverMoney.length || used.some((m) => m!.conf < MIN_MONEY_CONF)) uncertain.add('allin');
       if (heroResultCny === null) {
         allin = { street, heroEquity, potContested: null, heroInvested: null };
         uncertain.add('allin');
