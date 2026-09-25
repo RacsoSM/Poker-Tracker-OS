@@ -1,5 +1,6 @@
 import { createWorker, OEM, PSM, type Page } from 'tesseract.js';
 import { toBlob } from '../image/blob';
+import { createSerial } from './serial';
 import type { OcrWord } from './types';
 
 export type OcrMode = 'block' | 'sparse';
@@ -28,16 +29,21 @@ export function pageWords(page: Page): OcrWord[] {
 
 export async function createOcrEngine(paths: OcrEnginePaths = {}): Promise<OcrEngine> {
   const worker = await createWorker('eng', OEM.LSTM_ONLY, paths);
+  // setParameters + recognize deben ir juntos: si dos análisis se solapan en el mismo worker,
+  // uno podría leer con el modo de segmentación del otro.
+  const serial = createSerial();
   return {
-    async recognize(image, mode) {
-      // SINGLE_BLOCK es el modo por defecto de tesseract.js y el que usó la prueba (spec §10a).
-      await worker.setParameters({ tessedit_pageseg_mode: mode === 'sparse' ? PSM.SPARSE_TEXT : PSM.SINGLE_BLOCK });
-      const input =
-        typeof window === 'undefined'
-          ? (globalThis as unknown as { Buffer: { from(b: Uint8Array): Buffer } }).Buffer.from(image)
-          : toBlob(image, 'image/png');
-      const { data } = await worker.recognize(input, {}, { blocks: true });
-      return pageWords(data);
+    recognize(image, mode) {
+      return serial(async () => {
+        // SINGLE_BLOCK es el modo por defecto de tesseract.js y el que usó la prueba (spec §10a).
+        await worker.setParameters({ tessedit_pageseg_mode: mode === 'sparse' ? PSM.SPARSE_TEXT : PSM.SINGLE_BLOCK });
+        const input =
+          typeof window === 'undefined'
+            ? (globalThis as unknown as { Buffer: { from(b: Uint8Array): Buffer } }).Buffer.from(image)
+            : toBlob(image, 'image/png');
+        const { data } = await worker.recognize(input, {}, { blocks: true });
+        return pageWords(data);
+      });
     },
     async terminate() {
       await worker.terminate();
