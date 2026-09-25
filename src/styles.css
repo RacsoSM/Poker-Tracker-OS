@@ -89,3 +89,7 @@ h2 { font-size: 1.1rem; margin: 24px 0 8px; }
 .zoom-wrap img { width: 100%; }
 .zoom-wrap.zoomed img { width: 250%; max-width: none; }
 .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+
+/* Radios y checkboxes dentro de .field: tamaño nativo, alineados con su texto. */
+.field input[type='radio'], .field input[type='checkbox'] { width: auto; min-height: 0; margin: 0; accent-color: var(--accent); }
+fieldset.field label { display: flex; align-items: center; gap: 8px; min-height: 44px; }
