@@ -88,7 +88,7 @@ El "Total pot" de la imagen **no** se usa, porque incluye apuestas no pagadas (e
 - El rake, si existe, ya está descontado en `r_i`, así que no requiere tratamiento aparte.
 
 ### 4.3 Fecha de un tramo
-"My stats" no muestra fecha. `startedAt` se toma, en este orden, de: fecha EXIF de la imagen → `lastModified` del archivo → momento de la subida. Siempre es editable en la pantalla de confirmación.
+"My stats" no muestra fecha. `startedAt` se toma, en este orden, de: `lastModified` del archivo → momento de la subida. Siempre es editable en la pantalla de confirmación. (No se lee EXIF: las capturas de pantalla de Android son PNG y no lo traen.)
 
 ### 4.4 Día de juego
 `díaDeJuego(t) = fechaLocal(t − dayCutoffHour horas)`. Con corte a las 06:00, un tramo a las 01:30 del 26/09 cuenta para el 25/09. Las manos usan `playedAt` y se asignan al día con la misma regla.
@@ -158,11 +158,25 @@ Barra inferior con cuatro pestañas y botón flotante "+".
 - **Fixtures reales** en `tests/fixtures/`:
   - `session-summary-01.png` → resultado −13.00, manos 18, duración 133 s.
   - `hand-1323539300829384704.png` → handId `1323539300829384704`, fecha 2026-09-25 11:00:47, héroe RacsoSM en HJ con A♦8♣, tablero 5♣ Q♦ 8♥ 4♣ 3♦, resultado −28.00, `kind = "study"`.
-  - Test adicional con la misma mano configurando `heroName = "超激进流"`, para validar la rama all-in con bote: equity 0.87, calle flop, bote 347.20, invertido 156.10, resultado +191.10. Si el OCR no lee nombres chinos, este caso se prueba sobre el parser con la salida del OCR serializada.
+  - Test adicional con la misma mano configurando `heroName = "HiTeR2504"` (el OCR no lee nombres chinos), para validar la rama all-in: BTN con K♠Q♠, equity 0.13, calle flop, bote 347.20, invertido 156.10, resultado −156.10, EV −110.96, suerte −45.14. La rama "héroe gana" de §4.2 se cubre con tests unitarios de `inferPot`.
 - **Tests unitarios** de `domain/`: EV, suerte, ¥/h, bb/100, día de juego con corte (incluidos los bordes 05:59 y 06:00) y totales.
 - **Tests de parsers** sobre la salida del OCR serializada (rápidos y deterministas), más un test de integración lento que ejecuta Tesseract sobre las imágenes reales.
 - **Tests de copia de seguridad:** exportar e importar da un resultado idéntico, y un archivo corrupto no modifica la base de datos.
 - Las nuevas capturas del usuario (sobre todo all-ins propios ganados y perdidos) se añadirán como fixtures.
+
+## 10a. Resultados de la prueba de OCR (2026-09-25)
+
+Prueba desechable con Tesseract.js 5.1.1 sobre los dos fixtures:
+
+- **Resumen:** los tres datos se leen con confianza ≥ 91 en una sola pasada.
+- **Mano, pasada completa (PSM auto):** `HAND ID`, la fecha-hora, las cabeceras de columna, `RacsoSM` y los porcentajes (7%, 93%, 13%, 87%) se leen con confianza ≥ 90. Los importes de la columna RIVER salen con baja confianza.
+- **Mano, pasada por columna** (recorte de 1/5 del ancho, binarizado con luminancia > 140, escalado ×2 y PSM sparse): los importes de RIVER se leen correctamente. Esta pasada leyó "3%" donde decía 13%, así que **los porcentajes salen de la pasada completa y los importes de la pasada por columna**.
+- **Cartas:** con detección por color se encuentran las 11 cartas grandes (tablero y cartas de los asientos) con el palo correcto. La baraja es de 4 colores: **las picas son cartas negras** (≈ 28,28,28), los tréboles verdes, los diamantes azules y los corazones rojos (≈ 139,25,25). Las cartas pequeñas de las columnas usan otro esquema (fondo blanco), así que no se usan.
+- **Rango de las cartas:** el OCR acierta solo 6 de 11 por la fuente condensada. Sustitución: **comparación con plantillas** (glifo binario de 16×24), separando cartas de tablero y de asiento. Entre cartas del mismo tamaño la distancia es ≤ 0.09 y entre rangos distintos es ≥ 0.19. Umbral: 0.15. Las plantillas iniciales salen del fixture (tablero: 5, Q, 8, 4, 3; asiento: K, Q, A, 8). Cuando el usuario confirma un rango desconocido con el selector, la app **guarda esa plantilla** y aprende.
+- **Filas:** cada columna tiene recuadros de fila (≈ 38,40,54) sobre un fondo (≈ 31,33,46) y se detectan por píxeles. En el fixture salen 8 filas en PRE-FLOP y 8 en RIVER (= jugadores).
+- **Posición del héroe:** si el héroe aparece en la columna BLINDS, sale de la etiqueta de su fila (SB, BB, o STR → UTG). Si no, es el índice de su primera fila en PRE-FLOP dentro del orden de acción: antes de que el héroe actúe por primera vez, cada fila corresponde a un jugador distinto. El número de jugadores es el número de filas en RIVER y el orden se rota si hay straddle.
+
+Esto concreta el §5.4.
 
 ## 10. Riesgos y primer paso
 
