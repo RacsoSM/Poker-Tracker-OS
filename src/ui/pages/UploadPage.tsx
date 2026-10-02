@@ -35,6 +35,8 @@ export function UploadPage() {
   const [queue, setQueue] = useState<IncomingFile[]>([]);
   const [index, setIndex] = useState(0);
   const [manual, setManual] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [dropNotice, setDropNotice] = useState<string | null>(null);
   const [state, setState] = useState<State>({ status: 'idle' });
   const current = queue[index];
   const previewUrl = useObjectUrl(current?.bytes, current?.mime);
@@ -82,6 +84,7 @@ export function UploadPage() {
 
   function pick(list: FileList | null) {
     const images = [...(list ?? [])].filter((f) => f.type.startsWith('image/') || /\.(png|jpe?g|webp|heic)$/i.test(f.name));
+    setDropNotice(list?.length && !images.length ? 'Lo que soltaste no tiene imágenes (png, jpg, webp o heic).' : null);
     if (!images.length) return;
     void readFiles(images).then((f) => {
       setQueue(f);
@@ -122,6 +125,15 @@ export function UploadPage() {
       <section className="page">
         <h1>Subir capturas</h1>
         <p className="muted">Elige capturas de "My stats" o manos descargadas de WPT. Puedes elegir varias a la vez.</p>
+        <div
+          className={`dropzone${dragging ? ' dragging' : ''}`}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false); }}
+          onDrop={(e) => { e.preventDefault(); setDragging(false); pick(e.dataTransfer.files); }}
+        >
+          Suelta aquí las capturas
+        </div>
+        {dropNotice && <p className="warning" role="alert">{dropNotice}</p>}
         <label className="btn primary">
           Elegir de la galería
           <input type="file" accept="image/*" multiple hidden onChange={(e) => pick(e.target.files)} />
