@@ -21,9 +21,9 @@ type State =
   | { status: 'error'; message: string }
   | { status: 'ready'; analysis: Analysis; duplicate?: Hand };
 
-async function readFiles(list: FileList): Promise<IncomingFile[]> {
+async function readFiles(list: File[]): Promise<IncomingFile[]> {
   return Promise.all(
-    [...list].map(async (f) => ({ bytes: new Uint8Array(await f.arrayBuffer()), mime: f.type || 'image/png', lastModified: f.lastModified || Date.now(), name: f.name })),
+    list.map(async (f) => ({ bytes: new Uint8Array(await f.arrayBuffer()), mime: f.type || 'image/png', lastModified: f.lastModified || Date.now(), name: f.name })),
   );
 }
 
@@ -79,6 +79,15 @@ export function UploadPage() {
     }
   }
 
+  function pick(list: FileList | null) {
+    const images = [...(list ?? [])].filter((f) => f.type.startsWith('image/') || /\.(png|jpe?g|webp|heic)$/i.test(f.name));
+    if (!images.length) return;
+    void readFiles(images).then((f) => {
+      setQueue(f);
+      setIndex(0);
+    });
+  }
+
   if (!settings) return <p className="muted page">Cargando…</p>;
 
   if (!current) {
@@ -88,7 +97,11 @@ export function UploadPage() {
         <p className="muted">Elige capturas de "My stats" o manos descargadas de WPT. Puedes elegir varias a la vez.</p>
         <label className="btn primary">
           Elegir de la galería
-          <input type="file" accept="image/*" multiple hidden onChange={(e) => { if (e.target.files?.length) void readFiles(e.target.files).then((f) => { setQueue(f); setIndex(0); }); }} />
+          <input type="file" accept="image/*" multiple hidden onChange={(e) => pick(e.target.files)} />
+        </label>{' '}
+        <label className="btn">
+          Elegir de Drive / archivos
+          <input type="file" accept="*/*" multiple hidden onChange={(e) => pick(e.target.files)} />
         </label>
       </section>
     );
