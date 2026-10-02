@@ -40,3 +40,15 @@ Regenerar datos derivados de los fixtures: `npx tsx scripts/make-seed-templates.
 1. Entra en https://app.netlify.com → **Add new site → Import an existing project → GitHub** y elige `RacsoSM/Poker-Tracker-OS`.
 2. Netlify lee `netlify.toml` (build `npm run build`, carpeta `dist`). Pulsa **Deploy**.
 3. Abre en el móvil la URL `https://<tu-sitio>.netlify.app` e instala la app.
+
+## Sincronizar entre dispositivos (Firebase, gratis, sin tarjeta)
+La app guarda todo en el dispositivo y, si configuras Firebase, además lo sincroniza (manos, tramos, ajustes y capturas). Sin configurar, funciona solo en local.
+
+1. https://console.firebase.google.com → **Crear un proyecto** (puedes desactivar Google Analytics).
+2. **Compilación → Authentication → Comenzar → Correo electrónico/contraseña → Habilitar.**
+3. **Compilación → Firestore Database → Crear base de datos** (modo producción, cualquier región). En la pestaña **Reglas** pega el contenido de `firestore.rules` y **Publicar**.
+4. **Configuración del proyecto (engranaje) → Tus apps → icono web `</>`** → registra una app (sin Hosting). Copia el objeto `firebaseConfig`.
+5. En Netlify: **Site configuration → Environment variables → Add** `VITE_FIREBASE_CONFIG` con el objeto en JSON (una línea, claves entre comillas), p. ej. `{"apiKey":"…","authDomain":"…","projectId":"…","storageBucket":"…","messagingSenderId":"…","appId":"…"}`. Luego **Deploys → Trigger deploy**.
+6. En cada dispositivo: **Ajustes → Sincronización → Crear cuenta** (la primera vez) o **Iniciar sesión**.
+
+Para probar en local, pon esa misma variable en un archivo `.env.local` (no se sube a git).

@@ -4,3 +4,5 @@ dev-dist
 public/tesseract
 *.traineddata
 coverage
+.env
+.env.*

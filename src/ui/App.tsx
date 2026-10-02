@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useDb } from '../db/context';
+import { attachSync } from '../sync/runner';
 import { BottomNav } from './BottomNav';
 import { Fab } from './Fab';
 import { ChartsPage } from './pages/ChartsPage';
@@ -12,9 +14,11 @@ import { UploadPage } from './pages/UploadPage';
 import { requestPersistence } from './storage';
 
 export function App() {
+  const db = useDb();
   useEffect(() => {
     void requestPersistence();
   }, []);
+  useEffect(() => attachSync(db), [db]);
   return (
     <HashRouter>
       <div className="app">

@@ -5,6 +5,7 @@ import { saveSettings } from '../../db/repo';
 import { parseDecimal } from '../../domain/format';
 import { dayKey } from '../../domain/stats';
 import type { Settings } from '../../domain/types';
+import { SyncSection } from '../components/SyncSection';
 import { saveFile } from '../download';
 import { useSettings } from '../hooks';
 import { isPersisted } from '../storage';
@@ -86,6 +87,8 @@ export function SettingsPage() {
       <h1>Ajustes</h1>
       {message && <p className="notice" role="status">{message}</p>}
       <SettingsForm key={JSON.stringify(settings)} settings={settings} onSave={async (s) => { await saveSettings(db, s); setMessage('Ajustes guardados.'); }} />
+
+      <SyncSection />
 
       <h2>Copia de seguridad</h2>
       <p className="muted">
