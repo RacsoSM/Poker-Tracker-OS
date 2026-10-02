@@ -50,7 +50,7 @@ describe('sync', () => {
 
     expect((await pc.chunks.get(chunk.id))?.resultCny).toBe(-13);
     expect((await pc.hands.get(hand.id))?.handId).toBe(HAND.handId);
-    expect((await pc.images.get(chunk.imageId))?.bytes).toEqual(IMG.bytes);
+    expect((await pc.images.get(chunk.imageId!))?.bytes).toEqual(IMG.bytes);
   });
 
   it('propaga ediciones y borrados, y borra también la captura de la nube', async () => {
@@ -69,8 +69,19 @@ describe('sync', () => {
 
     expect((await pc.hands.get(hand.id))?.note).toBe('editada');
     expect(await pc.chunks.get(chunk.id)).toBeUndefined();
-    expect(await pc.images.get(chunk.imageId)).toBeUndefined();
-    expect(remote.images.has(chunk.imageId)).toBe(false);
+    expect(await pc.images.get(chunk.imageId!)).toBeUndefined();
+    expect(remote.images.has(chunk.imageId!)).toBe(false);
+  });
+
+  it('sincroniza un tramo manual que no tiene captura', async () => {
+    const remote = memoryRemote();
+    const phone = newDb();
+    const pc = newDb();
+    const chunk = await addChunk(phone, CHUNK);
+    await syncOnce(phone, remote, 'u1');
+    await syncOnce(pc, remote, 'u1');
+    expect((await pc.chunks.get(chunk.id))?.resultCny).toBe(-13);
+    expect(remote.images.size).toBe(0);
   });
 
   it('lo que llega de la nube no se vuelve a subir', async () => {

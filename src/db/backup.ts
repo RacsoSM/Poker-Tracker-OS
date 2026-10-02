@@ -17,7 +17,7 @@ const settingsZ = z.object({
 });
 const chunkZ = z.object({
   id: z.string(), startedAt: z.number(), resultCny: z.number(), hands: z.number().int().nonnegative(),
-  durationSec: z.number().int().nonnegative(), stakes: stakesZ, imageId: z.string(), note: z.string().optional(), createdAt: z.number(),
+  durationSec: z.number().int().nonnegative(), stakes: stakesZ, imageId: z.string().optional(), note: z.string().optional(), createdAt: z.number(),
 });
 const handZ = z.object({
   id: z.string(), handId: z.string(), playedAt: z.number(),
@@ -70,7 +70,7 @@ export async function importBackup(db: PtDb, bytes: Uint8Array, mode: 'replace' 
   for (const m of data.images) if (!entries[m.file]) throw new BackupError(`Falta la imagen ${m.file} en la copia.`);
   const imageIds = new Set(data.images.map((i) => i.id));
   for (const item of [...data.chunks, ...data.hands]) {
-    if (!imageIds.has(item.imageId)) throw new BackupError(`Falta la imagen ${item.imageId} en la copia.`);
+    if (item.imageId && !imageIds.has(item.imageId)) throw new BackupError(`Falta la imagen ${item.imageId} en la copia.`);
   }
 
   const images: StoredImage[] = data.images.map((m) => ({ id: m.id, mime: m.mime, width: m.width, height: m.height, bytes: entries[m.file].slice() }));
@@ -94,7 +94,7 @@ export async function importBackup(db: PtDb, bytes: Uint8Array, mode: 'replace' 
     const handIds = new Set((await db.hands.toArray()).flatMap((h) => [h.id, h.handId]));
     const newChunks = chunks.filter((c) => !chunkIds.has(c.id));
     const newHands = hands.filter((h) => !handIds.has(h.id) && !handIds.has(h.handId));
-    const needed = new Set([...newChunks, ...newHands].map((x) => x.imageId));
+    const needed = new Set([...newChunks, ...newHands].map((x) => x.imageId).filter((id): id is string => !!id));
     const existingImages = new Set(await db.images.toCollection().primaryKeys());
     const templateIds = new Set(await db.rankTemplates.toCollection().primaryKeys());
     await db.images.bulkAdd(images.filter((i) => needed.has(i.id) && !existingImages.has(i.id)));

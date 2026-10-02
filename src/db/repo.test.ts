@@ -25,10 +25,20 @@ describe('repo', () => {
   it('guarda un tramo con su imagen y lo borra junto con ella', async () => {
     const db = newDb();
     const c = await addChunk(db, CHUNK, IMG);
-    expect(await db.images.get(c.imageId)).toMatchObject({ mime: 'image/png' });
+    expect(await db.images.get(c.imageId!)).toMatchObject({ mime: 'image/png' });
     await deleteChunk(db, c.id);
     expect(await db.chunks.count()).toBe(0);
     expect(await db.images.count()).toBe(0);
+  });
+
+  it('guarda y borra un tramo manual, sin captura', async () => {
+    const db = newDb();
+    const c = await addChunk(db, CHUNK);
+    expect(c.imageId).toBeUndefined();
+    expect(await db.chunks.get(c.id)).toMatchObject({ resultCny: -13, hands: 18 });
+    expect(await db.images.count()).toBe(0);
+    await deleteChunk(db, c.id);
+    expect(await db.chunks.count()).toBe(0);
   });
 
   it('detecta un tramo igual el mismo día de juego', async () => {

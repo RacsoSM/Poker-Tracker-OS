@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDb } from '../../db/context';
-import { addChunk, addHand, addTemplates, DuplicateHandError, findHandByHandId, findSimilarChunk, loadTemplates } from '../../db/repo';
+import { addChunk, addHand, addTemplates, DuplicateHandError, findHandByHandId, findSimilarChunk, loadTemplates, type ImageInput } from '../../db/repo';
 import type { Hand, HandValues } from '../../domain/types';
 import { decodeImageFile } from '../../import/decodeImage';
 import { templatesToLearn } from '../../import/learn';
@@ -34,6 +34,7 @@ export function UploadPage() {
   const [params] = useSearchParams();
   const [queue, setQueue] = useState<IncomingFile[]>([]);
   const [index, setIndex] = useState(0);
+  const [manual, setManual] = useState(false);
   const [state, setState] = useState<State>({ status: 'idle' });
   const current = queue[index];
   const previewUrl = useObjectUrl(current?.bytes, current?.mime);
@@ -88,7 +89,33 @@ export function UploadPage() {
     });
   }
 
+  /** Devuelve false si el usuario decidió no guardar un tramo que parece repetido. */
+  async function saveChunk(v: SummaryValues, image?: ImageInput): Promise<boolean> {
+    const similar = await findSimilarChunk(db, v, settings!.dayCutoffHour);
+    if (similar && !window.confirm('Ya hay un tramo con el mismo resultado, manos y duración ese día. ¿Guardarlo de todas formas?')) return false;
+    await addChunk(db, { ...v, stakes: settings!.stakes }, image);
+    return true;
+  }
+
   if (!settings) return <p className="muted page">Cargando…</p>;
+
+  if (manual && !current) {
+    return (
+      <section className="page">
+        <h1>Agregar sesión manualmente</h1>
+        <SummaryForm
+          initial={{ startedAt: Date.now(), resultCny: null, hands: null, durationSec: null }}
+          onSave={async (v) => {
+            if (!(await saveChunk(v))) return;
+            setManual(false);
+            navigate('/dias');
+          }}
+          onCancel={() => setManual(false)}
+          cancelLabel="Cancelar"
+        />
+      </section>
+    );
+  }
 
   if (!current) {
     return (
@@ -103,6 +130,9 @@ export function UploadPage() {
           Elegir de Drive / archivos
           <input type="file" accept="*/*" multiple hidden onChange={(e) => pick(e.target.files)} />
         </label>
+        <h2>¿Sin captura?</h2>
+        <p className="muted">Escribe a mano el resultado, las manos y la duración de una sesión.</p>
+        <button type="button" className="btn" onClick={() => setManual(true)}>Agregar sesión manualmente</button>
       </section>
     );
   }
@@ -111,10 +141,7 @@ export function UploadPage() {
   const imageInput = () => ({ bytes: current.bytes, mime: current.mime, width: image!.width, height: image!.height });
 
   async function saveSummary(v: SummaryValues) {
-    const similar = await findSimilarChunk(db, v, settings!.dayCutoffHour);
-    if (similar && !window.confirm('Ya hay un tramo con el mismo resultado, manos y duración ese día. ¿Guardarlo de todas formas?')) return;
-    await addChunk(db, { ...v, stakes: settings!.stakes }, imageInput());
-    next();
+    if (await saveChunk(v, imageInput())) next();
   }
 
   async function saveHand(v: HandValues) {

@@ -115,9 +115,11 @@ export async function pull(db: PtDb, remote: Remote, uid: string): Promise<numbe
           await db.rankTemplates.put(value);
           continue;
         }
-        const img = images.get(value.imageId);
-        if (img) await db.images.put({ ...img, id: value.imageId });
-        if (!img && !(await db.images.get(value.imageId))) continue; // la captura aún no llegó; se reintenta en la próxima sync
+        if (value.imageId) {
+          const img = images.get(value.imageId);
+          if (img) await db.images.put({ ...img, id: value.imageId });
+          if (!img && !(await db.images.get(value.imageId))) continue; // la captura aún no llegó; se reintenta en la próxima sync
+        }
         if (r.kind === 'chunk') await db.chunks.put(value);
         else {
           const clash = await db.hands.where('handId').equals(value.handId).first();
@@ -137,7 +139,7 @@ async function removeWithImage(db: PtDb, table: PtDb['chunks'] | PtDb['hands'], 
   const row = await table.get(id);
   if (!row) return;
   await table.delete(id);
-  await db.images.delete(row.imageId);
+  if (row.imageId) await db.images.delete(row.imageId);
 }
 
 export async function syncOnce(db: PtDb, remote: Remote, uid: string): Promise<SyncResult> {

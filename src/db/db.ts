@@ -47,7 +47,7 @@ export class PtDb extends Dexie {
     });
   }
 
-  private track<T>(table: Table<T, string>, kind: SyncKind, idOf: (row: T) => string, imageOf?: (row: T) => string) {
+  private track<T>(table: Table<T, string>, kind: SyncKind, idOf: (row: T) => string, imageOf?: (row: T) => string | undefined) {
     const enqueue = (tx: Transaction, row: OutboxRow) => {
       if (this.remoteTxs.has(tx)) return;
       // Se escribe cuando la transacción original ya terminó bien; así no hace falta incluir `outbox` en cada transacción.

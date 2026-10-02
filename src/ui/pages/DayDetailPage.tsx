@@ -30,7 +30,9 @@ function ChunkItem({ chunk }: { chunk: SessionChunk }) {
   }
   return (
     <div className="list-item">
-      <button type="button" className="btn" aria-label="Ver captura" onClick={() => setShowImage(!showImage)}><ImageThumb imageId={chunk.imageId} /></button>
+      {chunk.imageId && (
+        <button type="button" className="btn" aria-label="Ver captura" onClick={() => setShowImage(!showImage)}><ImageThumb imageId={chunk.imageId} /></button>
+      )}
       <div className="grow">
         <div>{fmtTime(chunk.startedAt)} · <span className={signClass(chunk.resultCny)}>{fmtCny(chunk.resultCny)}</span></div>
         <div className="muted small">{chunk.hands} manos · {fmtDuration(chunk.durationSec)}{chunk.note ? ` · ${chunk.note}` : ''}</div>

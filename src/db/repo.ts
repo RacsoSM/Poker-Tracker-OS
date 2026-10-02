@@ -27,11 +27,12 @@ export async function saveSettings(db: PtDb, s: Settings): Promise<void> {
   await db.settings.put({ ...s, key: 'main' });
 }
 
-export async function addChunk(db: PtDb, chunk: ChunkInput, image: ImageInput): Promise<SessionChunk> {
-  const imageId = newId();
-  const saved: SessionChunk = { ...chunk, id: newId(), imageId, createdAt: Date.now() };
+/** Sin `image` se guarda un tramo manual, sin captura. */
+export async function addChunk(db: PtDb, chunk: ChunkInput, image?: ImageInput): Promise<SessionChunk> {
+  const imageId = image ? newId() : undefined;
+  const saved: SessionChunk = { ...chunk, id: newId(), ...(imageId ? { imageId } : {}), createdAt: Date.now() };
   await db.transaction('rw', db.chunks, db.images, async () => {
-    await db.images.add({ ...image, id: imageId });
+    if (image && imageId) await db.images.add({ ...image, id: imageId });
     await db.chunks.add(saved);
   });
   return saved;
@@ -46,7 +47,7 @@ export async function deleteChunk(db: PtDb, id: string): Promise<void> {
     const c = await db.chunks.get(id);
     if (!c) return;
     await db.chunks.delete(id);
-    await db.images.delete(c.imageId);
+    if (c.imageId) await db.images.delete(c.imageId);
   });
 }
 

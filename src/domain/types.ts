@@ -22,7 +22,8 @@ export interface SessionChunk {
   hands: number;
   durationSec: number;
   stakes: Stakes;
-  imageId: string;
+  /** Ausente en las sesiones agregadas a mano (no tienen captura). */
+  imageId?: string;
   note?: string;
   createdAt: number;
 }
