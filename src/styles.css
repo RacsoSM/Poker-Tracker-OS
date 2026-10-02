@@ -31,8 +31,8 @@ h2 { font-size: 1.1rem; margin: 24px 0 8px; }
 .warning { background: #3a2f0b; border-left: 3px solid var(--flag); padding: 8px 12px; border-radius: 6px; }
 
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); z-index: 10; }
-.bottom-nav a { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 0; text-decoration: none; color: var(--muted); font-size: 0.75rem; gap: 2px; }
-.bottom-nav a.active { color: var(--text); }
+.bottom-nav a { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 48px; text-decoration: none; color: var(--muted); font-size: 0.9rem; }
+.bottom-nav a.active { color: var(--text); font-weight: 600; }
 .fab { position: fixed; right: 16px; bottom: calc(72px + env(safe-area-inset-bottom)); width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 2rem; text-decoration: none; box-shadow: 0 4px 12px #0008; z-index: 11; }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; min-height: 44px; }

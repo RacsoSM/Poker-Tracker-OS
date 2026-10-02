@@ -24,7 +24,7 @@ export function App() {
       <div className="app">
         <main className="app-main">
           <Routes>
-            <Route path="/" element={<Navigate to="/dias" replace />} />
+            <Route path="/" element={<Navigate to="/graficas" replace />} />
             <Route path="/dias" element={<DaysPage />} />
             <Route path="/dias/:day" element={<DayDetailPage />} />
             <Route path="/graficas" element={<ChartsPage />} />
