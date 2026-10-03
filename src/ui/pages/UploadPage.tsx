@@ -5,7 +5,7 @@ import { addChunk, addHand, addTemplates, DuplicateHandError, findHandByHandId, 
 import type { Hand, HandValues } from '../../domain/types';
 import { decodeImageFile } from '../../import/decodeImage';
 import { templatesToLearn } from '../../import/learn';
-import { analyzeFile, withImportFallbacks, type Analysis, type IncomingFile } from '../../import/pipeline';
+import { analyzeFile, importedHandDraft, type Analysis, type IncomingFile } from '../../import/pipeline';
 import { takeSharedFiles } from '../../import/shared';
 import { getBrowserEngine } from '../../ocr/loader';
 import { emptyHandDraft } from '../../parsers/hand';
@@ -188,7 +188,7 @@ export function UploadPage() {
           <p className="warning">No reconocí esta captura. ¿Qué es?</p>
           <div className="btn-row">
             <button type="button" className="btn" onClick={() => setState({ status: 'ready', analysis: { kind: 'summary', draft: emptySummaryDraft(), image: state.analysis.image } })}>Es un resumen (My stats)</button>
-            <button type="button" className="btn" onClick={() => setState({ status: 'ready', analysis: { kind: 'hand', draft: withImportFallbacks(emptyHandDraft(), current), image: state.analysis.image } })}>Es una mano</button>
+            <button type="button" className="btn" onClick={() => setState({ status: 'ready', analysis: { kind: 'hand', draft: importedHandDraft(emptyHandDraft(), current, Date.now()), image: state.analysis.image } })}>Es una mano</button>
             <button type="button" className="btn" onClick={next}>Descartar</button>
           </div>
         </>

@@ -10,10 +10,12 @@ import { nameMatches } from './names';
 import { readingOrder } from './words';
 
 export interface PartialCard { rank: Rank | null; suit: Suit | null }
-export type HandField = 'handId' | 'playedAt' | 'heroPosition' | 'heroCards' | 'board' | 'heroResultCny' | 'allin';
+export type HandField = 'heroPosition' | 'heroCards' | 'board' | 'heroResultCny' | 'allin';
 export interface GlyphRef { slot: 'hero' | 'board'; index: number; sizeClass: SizeClass; glyph: string; guessed: Rank | null }
 export interface AllinDraft { street: Street | null; heroEquity: number | null; potContested: number | null; heroInvested: number | null }
 export interface HandDraft {
+  // El identificador y la fecha no se leen de la captura (ver `importedHandDraft`): quien
+  // analiza el archivo los pone.
   handId: string | null;
   playedAt: number | null;
   heroPosition: Position | null;
@@ -42,23 +44,8 @@ export function emptyHandDraft(): HandDraft {
     handId: null, playedAt: null, heroPosition: null,
     heroCards: [{ ...EMPTY_CARD }, { ...EMPTY_CARD }], board: [], heroResultCny: null,
     kind: 'study', allin: null,
-    uncertain: ['handId', 'playedAt', 'heroPosition', 'heroCards', 'heroResultCny'], glyphs: [],
+    uncertain: ['heroPosition', 'heroCards', 'heroResultCny'], glyphs: [],
   };
-}
-
-export function findHandId(full: OcrWord[]): string | null {
-  const i = full.findIndex((w) => /^ID$/i.test(w.text));
-  if (i >= 0 && full[i + 1] && /^\d{10,}$/.test(full[i + 1].text)) return full[i + 1].text;
-  return full.find((w) => /^\d{15,}$/.test(w.text))?.text ?? null;
-}
-
-export function findPlayedAt(full: OcrWord[]): number | null {
-  for (let i = 0; i < full.length - 1; i++) {
-    const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(full[i].text);
-    const t = /^(\d{1,2}):(\d{2}):(\d{2})$/.exec(full[i + 1].text);
-    if (d && t) return new Date(+d[1], +d[2] - 1, +d[3], +t[1], +t[2], +t[3]).getTime();
-  }
-  return null;
 }
 
 export function parseMoneyText(text: string): number | null {
@@ -160,11 +147,6 @@ export function parseHand(ocr: HandOcr, layout: HandLayout, heroName: string): H
   const glyphs: GlyphRef[] = [];
   const s = layout.width / 1280;
 
-  const handId = findHandId(ocr.full);
-  if (!handId) uncertain.add('handId');
-  const playedAt = findPlayedAt(ocr.full);
-  if (playedAt === null) uncertain.add('playedAt');
-
   const toPartial = (slot: GlyphRef['slot']) => (c: LayoutCard, index: number): PartialCard => {
     if (c.glyph) glyphs.push({ slot, index, sizeClass: c.sizeClass, glyph: c.glyph, guessed: c.rank });
     return { rank: c.rank, suit: c.suit };
@@ -224,5 +206,5 @@ export function parseHand(ocr: HandOcr, layout: HandLayout, heroName: string): H
     break;
   }
 
-  return { handId, playedAt, heroPosition, heroCards, board, heroResultCny, kind: allin ? 'allin' : 'study', allin, uncertain: [...uncertain], glyphs };
+  return { handId: null, playedAt: null, heroPosition, heroCards, board, heroResultCny, kind: allin ? 'allin' : 'study', allin, uncertain: [...uncertain], glyphs };
 }

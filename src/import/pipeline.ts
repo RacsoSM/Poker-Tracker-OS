@@ -20,23 +20,21 @@ export interface AnalyzeDeps {
   decode: (f: IncomingFile) => Promise<RGBA>;
   templates: RankTemplate[];
   heroName: string;
+  /** Reloj, para poder fijarlo en las pruebas. */
+  now?: () => number;
 }
 
-// Las capturas del móvil no enseñan ni el identificador ni la fecha de la mano, que son
-// obligatorios para guardarla. Se rellenan con lo que se sabe del archivo: una huella de sus
-// bytes y su fecha de modificación.
+// Ni el identificador ni la fecha se sacan ya de la captura: el "HAND ID" de WPT sale mal del
+// OCR más veces de las que sale bien, y las capturas del móvil ni siquiera lo enseñan, así que
+// acababa tecleándolos el usuario en cada mano. Se generan siempre.
 //
-// La fecha sigue marcada para revisar, porque la del archivo puede no ser la de la partida
-// (una captura reenviada por WhatsApp lleva la fecha de la descarga). El identificador
-// inventado deja de estarlo: no es un dato que se pueda contrastar con la captura.
-export function withImportFallbacks(draft: HandDraft, file: IncomingFile): HandDraft {
-  if (draft.handId !== null && draft.playedAt !== null) return draft;
-  return {
-    ...draft,
-    handId: draft.handId ?? syntheticHandId(file.bytes),
-    playedAt: draft.playedAt ?? file.lastModified,
-    uncertain: draft.handId === null ? draft.uncertain.filter((f) => f !== 'handId') : draft.uncertain,
-  };
+// El identificador es una huella de los bytes del archivo, no un número cualquiera: volver a
+// subir la misma captura da el mismo y salta el aviso de mano repetida.
+//
+// La fecha es la del momento de subir la foto. Ninguno de los dos queda marcado para revisar:
+// no son lecturas dudosas, son valores puestos a propósito.
+export function importedHandDraft(draft: HandDraft, file: IncomingFile, now: number): HandDraft {
+  return { ...draft, handId: syntheticHandId(file.bytes), playedAt: now };
 }
 
 export async function analyzeFile(file: IncomingFile, deps: AnalyzeDeps): Promise<Analysis> {
@@ -45,10 +43,11 @@ export async function analyzeFile(file: IncomingFile, deps: AnalyzeDeps): Promis
   const kind = detectKind(full);
   if (kind === 'summary') return { kind, draft: parseSummary(full), image };
   if (kind === 'unknown') return { kind, image };
+  const now = (deps.now ?? Date.now)();
   const layout = buildHandLayout(image, full, deps.templates);
-  if (!layout) return { kind: 'hand', draft: withImportFallbacks(emptyHandDraft(), file), image };
+  if (!layout) return { kind: 'hand', draft: importedHandDraft(emptyHandDraft(), file, now), image };
   const columns = await ocrColumns(deps.engine, image, layout);
   const table = await ocrTable(deps.engine, image, layout.headerTop);
   const draft = parseHand({ full, columns, table }, layout, deps.heroName);
-  return { kind: 'hand', draft: withImportFallbacks(draft, file), image };
+  return { kind: 'hand', draft: importedHandDraft(draft, file, now), image };
 }

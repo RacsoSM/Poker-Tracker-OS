@@ -25,8 +25,6 @@ describe('parseHand sobre capturas del móvil', () => {
     expect(d.heroCards.map((c) => c.suit)).toEqual(['h', 's']);
     expect(d.board.map((c) => c.suit)).toEqual(['h', 'h', 'd', 'c', 'c']);
     expect(d.kind).toBe('study');
-    // El móvil no enseña ni el identificador ni la fecha de la mano.
-    expect(d.uncertain).toEqual(expect.arrayContaining(['handId', 'playedAt']));
     expect(d.uncertain).not.toContain('heroResultCny');
   });
 

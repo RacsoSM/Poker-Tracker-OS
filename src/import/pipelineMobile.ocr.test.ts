@@ -12,9 +12,9 @@ let engine: OcrEngine;
 beforeAll(async () => { engine = await createOcrEngine(nodeOcrPaths()); });
 afterAll(async () => { await engine.terminate(); });
 
-const LAST_MODIFIED = 1759490000000;
-const file = (name: string): IncomingFile => ({ bytes: fixtureBytes(name), mime: 'image/png', lastModified: LAST_MODIFIED, name });
-const deps = () => ({ engine, decode: async (f: IncomingFile) => decodePng(f.bytes), templates: loadSeedTemplates(), heroName: 'RacsoSM' });
+const NOW = 1759500000000;
+const file = (name: string): IncomingFile => ({ bytes: fixtureBytes(name), mime: 'image/png', lastModified: 1, name });
+const deps = () => ({ engine, decode: async (f: IncomingFile) => decodePng(f.bytes), templates: loadSeedTemplates(), heroName: 'RacsoSM', now: () => NOW });
 
 describe('analyzeFile sobre capturas del móvil', () => {
   it('resumen en español con coma decimal', async () => {
@@ -28,11 +28,9 @@ describe('analyzeFile sobre capturas del móvil', () => {
     expect(a.kind).toBe('hand');
     if (a.kind === 'hand') {
       expect(a.draft).toMatchObject({ heroPosition: 'UTG', heroResultCny: 96.23, kind: 'study' });
-      // El móvil no enseña identificador ni fecha: se completan desde el archivo.
+      // Identificador generado y fecha de la subida, sin nada que teclear.
       expect(a.draft.handId).toMatch(/^img-[0-9a-f]{16}$/);
-      expect(a.draft.playedAt).toBe(LAST_MODIFIED);
-      expect(a.draft.uncertain).not.toContain('handId');
-      expect(a.draft.uncertain).toContain('playedAt');
+      expect(a.draft.playedAt).toBe(NOW);
     }
   });
 

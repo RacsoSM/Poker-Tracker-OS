@@ -31,7 +31,7 @@ export function HandForm({ initial, uncertain = [], onSave, onCancel, cancelLabe
       <label className={`field ${flagged.has('handId') || !s.handId.trim() ? 'flag' : ''}`}>
         <span>ID de la mano</span>
         <input aria-label="ID de la mano" value={s.handId} onChange={(e) => set('handId', e.target.value)} />
-        {isSyntheticHandId(s.handId) && <small className="muted">La captura no trae ID, así que se generó uno a partir de la imagen para detectar repetidas.</small>}
+        {isSyntheticHandId(s.handId) && <small className="muted">Generado a partir de la imagen: sirve para detectar si subes la misma captura dos veces.</small>}
       </label>
       <DateTimeField label="Fecha y hora" value={s.playedAt} onChange={(v) => set('playedAt', v)} flagged={flagged.has('playedAt')} />
       <label className={`field ${flagged.has('heroPosition') || !s.heroPosition ? 'flag' : ''}`}>

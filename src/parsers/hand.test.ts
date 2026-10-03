@@ -33,8 +33,9 @@ describe('parseMoneyText', () => {
 describe('parseHand sobre el fixture real', () => {
   it('RacsoSM (HJ, foldea en el flop): mano de estudio', () => {
     const d = parseHand(ocr, layout, 'RacsoSM');
-    expect(d.handId).toBe('1323539300829384704');
-    expect(d.playedAt).toBe(new Date(2026, 8, 25, 11, 0, 47).getTime());
+    // El identificador y la fecha los pone quien importa el archivo, no el análisis.
+    expect(d.handId).toBeNull();
+    expect(d.playedAt).toBeNull();
     expect(d.heroPosition).toBe('HJ');
     expect(d.heroCards).toEqual([{ rank: 'A', suit: 'd' }, { rank: '8', suit: 'c' }]);
     expect(d.board).toEqual(BOARD);
@@ -73,7 +74,6 @@ describe('parseHand sobre el fixture real', () => {
 
   it('héroe inexistente: borrador sin crash, con campos inciertos', () => {
     const d = parseHand(ocr, layout, 'NoExiste99');
-    expect(d.handId).toBe('1323539300829384704');
     expect(d.heroCards).toEqual([{ rank: null, suit: null }, { rank: null, suit: null }]);
     expect(d.heroPosition).toBeNull();
     expect(d.heroResultCny).toBeNull();
@@ -84,6 +84,6 @@ describe('parseHand sobre el fixture real', () => {
 
 describe('emptyHandDraft', () => {
   it('marca todo como incierto', () => {
-    expect(emptyHandDraft().uncertain).toEqual(['handId', 'playedAt', 'heroPosition', 'heroCards', 'heroResultCny']);
+    expect(emptyHandDraft().uncertain).toEqual(['heroPosition', 'heroCards', 'heroResultCny']);
   });
 });
