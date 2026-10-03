@@ -22,6 +22,8 @@ function fakeEngine(full: OcrWord[], columns?: HandOcr['columns']): OcrEngine & 
       calls.push(mode);
       if (mode === 'block') return full;
       if (!columns) return [];
+      // Tras las cinco columnas, el pipeline pide la mesa: aquí no aporta nada.
+      if (col >= LAYOUT_COLUMNS.length) return [];
       const name = LAYOUT_COLUMNS[col++];
       const rect = columnRect(1280, 2295, name, top);
       return columns[name].map((w) => ({
@@ -47,13 +49,13 @@ describe('analyzeFile', () => {
     if (a.kind === 'summary') expect(a.draft).toMatchObject({ resultCny: -13, hands: 18, durationSec: 133 });
     expect(engine.calls).toEqual(['block']);
   });
-  it('mano: pasada completa + 5 columnas', async () => {
+  it('mano: pasada completa + 5 columnas + mesa', async () => {
     const ocr = fixtureJson<HandOcr>('hand-1323539300829384704.ocr.json');
     const engine = fakeEngine(ocr.full, ocr.columns);
     const a = await analyzeFile(file(HAND_PNG), deps(engine));
     expect(a.kind).toBe('hand');
     if (a.kind === 'hand') expect(a.draft).toMatchObject({ handId: '1323539300829384704', heroPosition: 'HJ', heroResultCny: -28 });
-    expect(engine.calls).toEqual(['block', 'sparse', 'sparse', 'sparse', 'sparse', 'sparse']);
+    expect(engine.calls).toEqual(['block', 'sparse', 'sparse', 'sparse', 'sparse', 'sparse', 'sparse']);
   });
   it('imagen desconocida', async () => {
     const engine = fakeEngine([{ text: 'Lobby', conf: 90, x0: 0, y0: 0, x1: 1, y1: 1 }]);

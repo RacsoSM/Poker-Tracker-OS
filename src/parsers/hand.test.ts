@@ -19,6 +19,15 @@ describe('parseMoneyText', () => {
     expect(parseMoneyText('—¥1,156.10')).toBe(-1156.1);
     expect(parseMoneyText('Fold')).toBeNull();
   });
+  it('lee los formatos del móvil: "CN¥", coma decimal y enteros sin decimales', () => {
+    expect(parseMoneyText('RacsoSM UTG +CN¥ 96.23')).toBe(96.23);
+    expect(parseMoneyText('Pozo total : CN¥ 211,23')).toBe(211.23);
+    expect(parseMoneyText('@nexian SB -CN¥ 1')).toBe(-1);
+    expect(parseMoneyText('lunerjs CO CN¥ 0')).toBe(0);
+    expect(parseMoneyText('-CN¥ 1.234,56')).toBe(-1234.56);
+    // Un punto final de frase no forma parte del importe.
+    expect(parseMoneyText('+CN¥ 146.65.')).toBe(146.65);
+  });
 });
 
 describe('parseHand sobre el fixture real', () => {

@@ -5,7 +5,7 @@ import type { Rect } from '../image/rgba';
 import type { OcrWord } from '../ocr/types';
 import type { RowBox } from '../vision/rows';
 import type { HandLayout, LayoutCard, LayoutColumn } from './handLayout';
-import { isNegativeSign, SIGN } from './money';
+import { AMOUNT, CURRENCY, isNegativeSign, parseAmount, SIGN } from './money';
 import { nameMatches } from './names';
 import { readingOrder } from './words';
 
@@ -25,9 +25,13 @@ export interface HandDraft {
   uncertain: HandField[];
   glyphs: GlyphRef[];
 }
-export interface HandOcr { full: OcrWord[]; columns: Record<LayoutColumn, OcrWord[]> }
+export interface HandOcr { full: OcrWord[]; columns: Record<LayoutColumn, OcrWord[]>; table?: OcrWord[] }
 
-const MONEY = new RegExp(`(${SIGN})?\\s*[¥Y]\\s*(\\d[\\d,]*\\.\\d{2})`);
+const MONEY = new RegExp(`(${SIGN})?\\s*${CURRENCY}\\s*(${AMOUNT})`);
+// Verbos de acción en los dos idiomas de la app: marcan dónde acaba el bloque de ciegas
+// cuando el móvil funde ciegas y pre-flop en una sola columna.
+const ACTION = /^(fold|check|call|bet|raise|all-?in|no|ir|noir|pasar|igualar|apostar|subir)$/i;
+const MAX_BLIND_ROWS = 4;
 const PCT = /^(\d{1,3})%$/;
 const MIN_PCT_CONF = 60;
 const MIN_MONEY_CONF = 50;
@@ -60,7 +64,8 @@ export function findPlayedAt(full: OcrWord[]): number | null {
 export function parseMoneyText(text: string): number | null {
   const m = MONEY.exec(text);
   if (!m) return null;
-  const v = Number(m[2].replace(/,/g, ''));
+  const v = parseAmount(m[2]);
+  if (v === null) return null;
   return isNegativeSign(m[1]) ? -v : v;
 }
 
@@ -82,8 +87,18 @@ function heroRowIndex(words: OcrWord[], rows: RowBox[], heroName: string): numbe
 function rowMoney(words: OcrWord[]): { value: number | null; conf: number } {
   const ordered = readingOrder(words);
   const value = parseMoneyText(ordered.map((w) => w.text).join(' '));
-  const moneyWords = ordered.filter((w) => /[¥Y.]/.test(w.text));
+  const moneyWords = ordered.filter((w) => /[¥Y]/.test(w.text) || /^\d[\d.,]*$/.test(w.text));
   return { value, conf: moneyWords.length ? Math.min(...moneyWords.map((w) => w.conf)) : 0 };
+}
+
+// La pasada por columna es la buena, pero en el móvil a veces no llega a leer importes que
+// la pasada completa sí tiene (y al revés): si una falla, se prueba con la otra.
+function riverRowMoney(ocr: HandOcr, layout: HandLayout, row: RowBox): { value: number | null; conf: number } {
+  const fromColumn = rowMoney(ocr.columns.river.filter((w) => inRow(w, row)));
+  if (fromColumn.value !== null) return fromColumn;
+  const rect = layout.columns.river.rect;
+  const fromFull = rowMoney(ocr.full.filter((w) => inRect(w, rect) && inRow(w, row)));
+  return fromFull.value !== null ? fromFull : fromColumn;
 }
 
 // Porcentajes: primero la pasada completa (más fiable, spec §10a), después la de columna.
@@ -110,19 +125,33 @@ function isAboveName(card: LayoutCard, name: OcrWord, s: number): boolean {
   return ccx >= name.x0 - 80 * s && ccx <= name.x1 + 80 * s && bottom >= name.y0 - 60 * s && bottom <= name.y0 + 20 * s;
 }
 
+// Con ciegas y pre-flop fundidos (móvil), las primeras filas son el bloque de ciegas:
+// "Ciegas", la SB, la BB y el straddle si lo hay. Se corta en la primera fila que ya es una
+// acción (verbo reconocido o fila sin importe) y, como mucho, tras cuatro filas.
+function blindRowCount(words: OcrWord[], rows: RowBox[]): number {
+  let n = 0;
+  while (n < rows.length && n < MAX_BLIND_ROWS) {
+    const ws = rows[n] ? words.filter((w) => inRow(w, rows[n])) : [];
+    if (n > 0 && (ws.some((w) => ACTION.test(w.text)) || parseMoneyText(readingOrder(ws).map((w) => w.text).join(' ')) === null)) break;
+    n++;
+  }
+  return n;
+}
+
 function derivePosition(ocr: HandOcr, layout: HandLayout, heroName: string, nPlayers: number): Position | null {
-  const blinds = layout.columns.blinds;
   const bw = columnWords(ocr, layout, 'blinds');
-  const straddle = bw.some((w) => /^STR$/i.test(w.text));
-  for (const row of blinds.rows) {
+  const nBlinds = layout.mergedBlinds ? blindRowCount(bw, layout.columns.blinds.rows) : layout.columns.blinds.rows.length;
+  const blindRows = layout.columns.blinds.rows.slice(0, nBlinds);
+  const straddle = blindRows.some((row) => bw.some((w) => inRow(w, row) && /^STR$/i.test(w.text)));
+  for (const row of blindRows) {
     const ws = bw.filter((w) => inRow(w, row));
     if (!ws.some((w) => nameMatches(w.text, heroName))) continue;
     if (ws.some((w) => /^SB$/i.test(w.text))) return 'SB';
     if (ws.some((w) => /^BB$/i.test(w.text))) return 'BB';
     if (ws.some((w) => /^STR$/i.test(w.text))) return 'UTG';
   }
-  const pf = layout.columns.preflop;
-  const idx = heroRowIndex(columnWords(ocr, layout, 'preflop'), pf.rows, heroName);
+  const pfRows = layout.mergedBlinds ? layout.columns.preflop.rows.slice(nBlinds) : layout.columns.preflop.rows;
+  const idx = heroRowIndex(columnWords(ocr, layout, 'preflop'), pfRows, heroName);
   return idx < 0 ? null : positionFromPreflopIndex(idx, nPlayers, straddle);
 }
 
@@ -144,7 +173,7 @@ export function parseHand(ocr: HandOcr, layout: HandLayout, heroName: string): H
   const board = layout.cards.filter((c) => c.sizeClass === 'board').sort((a, b) => a.x - b.x).slice(0, 5).map(toPartial('board'));
   if (board.some((c) => c.rank === null)) uncertain.add('board');
 
-  const nameWord = ocr.full.find((w) => w.y1 < layout.headerTop && nameMatches(w.text, heroName));
+  const nameWord = [...ocr.full, ...(ocr.table ?? [])].find((w) => w.y1 < layout.headerTop && nameMatches(w.text, heroName));
   const heroBlobs = nameWord
     ? layout.cards.filter((c) => c.sizeClass === 'hole' && isAboveName(c, nameWord, s)).sort((a, b) => a.x - b.x).slice(0, 2)
     : [];
@@ -152,7 +181,7 @@ export function parseHand(ocr: HandOcr, layout: HandLayout, heroName: string): H
   if (heroCards.some((c) => c.rank === null || c.suit === null)) uncertain.add('heroCards');
 
   const river = layout.columns.river;
-  const riverMoney = river.rows.map((row) => rowMoney(ocr.columns.river.filter((w) => inRow(w, row))));
+  const riverMoney = river.rows.map((row) => riverRowMoney(ocr, layout, row));
   const heroRiver = heroRowIndex(columnWords(ocr, layout, 'river'), river.rows, heroName);
   const heroMoney = heroRiver >= 0 ? riverMoney[heroRiver] : null;
   const heroResultCny = heroMoney?.value ?? null;

@@ -21,5 +21,8 @@ export function nameMatches(text: string, heroName: string): boolean {
   const b = normalizeName(heroName);
   if (!b || !a) return false;
   if (a === b) return true;
-  return b.length >= 5 && Math.abs(a.length - b.length) <= 1 && levenshtein(a, b) <= 1;
+  // Las capturas del móvil son de menor resolución y el nombre sobre la mesa sale peor
+  // ("RacspaM" por "RacsoSM"): en nombres largos se toleran dos erratas en vez de una.
+  const budget = b.length >= 7 ? 2 : 1;
+  return b.length >= 5 && Math.abs(a.length - b.length) <= budget && levenshtein(a, b) <= budget;
 }

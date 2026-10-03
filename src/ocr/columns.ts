@@ -4,6 +4,7 @@ import type { OcrEngine } from './engine';
 import type { OcrWord } from './types';
 
 export const COLUMN_SCALE = 2;
+export const TABLE_SCALE = 2;
 const lightText = (r: number, g: number, b: number) => 0.3 * r + 0.59 * g + 0.11 * b > 140;
 
 // Segunda pasada (spec §10a): cada columna recortada, binarizada, ×2 y en modo sparse.
@@ -23,4 +24,20 @@ export async function ocrColumns(engine: OcrEngine, img: RGBA, layout: HandLayou
     }));
   }
   return out;
+}
+
+// Tercera pasada: la mesa (todo lo que queda por encima de la cabecera de calles). En las
+// capturas del móvil, de menos resolución, los nombres de los asientos no se leen en la
+// pasada completa; binarizados y al doble sí.
+export async function ocrTable(engine: OcrEngine, img: RGBA, headerTop: number): Promise<OcrWord[]> {
+  const rect = { x: 0, y: 0, w: img.width, h: Math.max(1, Math.round(headerTop)) };
+  const png = encodePng(binarize(img, rect, lightText, TABLE_SCALE));
+  const words = await engine.recognize(png, 'sparse');
+  return words.map((w) => ({
+    ...w,
+    x0: Math.round(w.x0 / TABLE_SCALE),
+    y0: Math.round(w.y0 / TABLE_SCALE),
+    x1: Math.round(w.x1 / TABLE_SCALE),
+    y1: Math.round(w.y1 / TABLE_SCALE),
+  }));
 }

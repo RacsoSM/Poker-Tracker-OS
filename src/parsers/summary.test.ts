@@ -11,11 +11,18 @@ describe('parseSummary', () => {
     const d = parseSummary(fixtureJson<{ full: OcrWord[] }>('session-summary-01.ocr.json').full);
     expect(d).toEqual({ resultCny: -13, hands: 18, durationSec: 133, uncertain: [] });
   });
+  it('lee el fixture del móvil: español y coma decimal', () => {
+    const d = parseSummary(fixtureJson<{ full: OcrWord[] }>('mobile-summary-01.ocr.json').full);
+    expect(d).toEqual({ resultCny: 177.74, hands: 29, durationSec: 296, uncertain: [] });
+  });
   it('acepta positivo, sin signo, miles y guion tipográfico', () => {
     expect(parseSummary([w('+CN¥1,234.50'), w('Total:'), w('1,250'), w('hands,'), w('Duration:'), w('01:30:00')])).toMatchObject({ resultCny: 1234.5, hands: 1250, durationSec: 5400 });
     expect(parseSummary([w('CN¥5.00')]).resultCny).toBe(5);
     expect(parseSummary([w('—CN¥3.00')]).resultCny).toBe(-3);
     expect(parseSummary([w('-CN'), w('Y13.00')]).resultCny).toBe(-13);
+    // El móvil usa coma decimal y no traduce "CN¥".
+    expect(parseSummary([w('+CN¥177,74'), w('Total:'), w('29'), w('manos,')])).toMatchObject({ resultCny: 177.74, hands: 29 });
+    expect(parseSummary([w('-CN¥1.234,50')]).resultCny).toBe(-1234.5);
   });
   it('marca inciertos los campos ausentes o de baja confianza', () => {
     const d = parseSummary([w('-CN¥13.00', 40), w('18'), w('hands')]);

@@ -1,5 +1,5 @@
 import type { RGBA } from '../image/rgba';
-import { ocrColumns } from '../ocr/columns';
+import { ocrColumns, ocrTable } from '../ocr/columns';
 import type { OcrEngine } from '../ocr/engine';
 import { detectKind } from '../parsers/detect';
 import { emptyHandDraft, parseHand, type HandDraft } from '../parsers/hand';
@@ -30,5 +30,6 @@ export async function analyzeFile(file: IncomingFile, deps: AnalyzeDeps): Promis
   const layout = buildHandLayout(image, full, deps.templates);
   if (!layout) return { kind: 'hand', draft: emptyHandDraft(), image };
   const columns = await ocrColumns(deps.engine, image, layout);
-  return { kind: 'hand', draft: parseHand({ full, columns }, layout, deps.heroName), image };
+  const table = await ocrTable(deps.engine, image, layout.headerTop);
+  return { kind: 'hand', draft: parseHand({ full, columns, table }, layout, deps.heroName), image };
 }

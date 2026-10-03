@@ -4,6 +4,8 @@ import type { RGBA } from '../image/rgba';
 export interface CardBlob { suit: Suit; x: number; y: number; w: number; h: number; sizeClass: SizeClass }
 
 const SUIT_CODES: Suit[] = ['s', 'h', 'd', 'c'];
+// Ancho / alto de una carta entera.
+const CARD_ASPECT = 0.72;
 
 // Baraja de 4 colores de WPT (spec §10a).
 export function classifyPixel(r: number, g: number, b: number): Suit | null {
@@ -13,7 +15,9 @@ export function classifyPixel(r: number, g: number, b: number): Suit | null {
   if (mx < 45 && mx - mn < 6) return 's';
   if (mx - mn < 60) return null;
   if (r > 110 && g < 70 && b < 70) return 'h';
-  if (g > r && g > b && g > 90) return 'c';
+  // Tréboles: verde muy saturado (≈0,120,40). El tapete de las mesas verdes del móvil
+  // (≈50,115,65) también es verde, así que hacen falta márgenes amplios sobre rojo y azul.
+  if (g > 90 && g - r >= 95 && g - b >= 60) return 'c';
   if (b > r && b > g && b > 120) return 'd';
   return null;
 }
@@ -61,9 +65,20 @@ export function detectCards(img: RGBA, maxY: number): CardBlob[] {
     const suit = SUIT_CODES[c - 1];
     const sizeClass: SizeClass = h / W >= 0.09 ? 'board' : 'hole';
     if (h < 35 * s || h > 0.15 * W || n / (w * h) <= 0.45) continue;
-    if (w >= 25 * s && ratio > 1.1 && ratio < 1.9) {
+    // Una carta tapada por su pareja solo asoma como franja: se admite hasta 3.4 de proporción,
+    // pero entonces se exige altura de carta para no colar manchas oscuras de los avatares.
+    const sliver = ratio >= 1.9 && h >= 0.05 * W;
+    if (ratio > 1.05 && ratio < 3.4 && (w >= 25 * s || sliver)) {
       out.push({ suit, x: x0, y: y0, w, h, sizeClass });
-    } else if (sizeClass === 'hole' && ratio > 0.5 && ratio <= 1.1 && h >= 0.06 * W) {
+    } else if (sizeClass === 'board' && ratio > 0.5) {
+      // Cartas comunitarias contiguas del mismo palo: en las capturas del móvil la junta entre
+      // ellas también es verde y se funden. Son iguales y están pegadas, así que se reparte
+      // el ancho en partes iguales según cuántas cartas de proporción normal caben.
+      const k = Math.round(w / (h * CARD_ASPECT));
+      if (k < 2 || Math.abs(w / k - h * CARD_ASPECT) > h * 0.15) continue;
+      const cw = Math.round(w / k);
+      for (let i = 0; i < k; i++) out.push({ suit, x: x0 + i * cw, y: y0, w: cw, h, sizeClass });
+    } else if (sizeClass === 'hole' && ratio > 0.5 && ratio <= 1.05 && h >= 0.06 * W) {
       // Dos cartas de asiento del mismo palo superpuestas y fundidas (p. ej. al reescalar se pierde
       // la línea que las separa). La de delante se ve entera (ancho ≈ 0.87 × alto).
       // Debe ser rectangular (esquinas con color de carta) para no partir avatares redondos.
