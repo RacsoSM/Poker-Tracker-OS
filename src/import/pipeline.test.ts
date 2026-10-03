@@ -6,8 +6,9 @@ import { COLUMN_SCALE } from '../ocr/columns';
 import { columnRect, findHeader, LAYOUT_COLUMNS } from '../parsers/handLayout';
 import type { HandOcr } from '../parsers/hand';
 import { fixtureBytes, fixtureJson, HAND_PNG, SUMMARY_PNG } from '../test/fixtures';
+import { emptyHandDraft } from '../parsers/hand';
 import { loadSeedTemplates } from '../vision/seeds';
-import { analyzeFile, type IncomingFile } from './pipeline';
+import { analyzeFile, withImportFallbacks, type IncomingFile } from './pipeline';
 
 // Motor falso: devuelve las salidas OCR congeladas en el orden en que el pipeline las pide.
 // Las palabras de columna del fixture están en coordenadas de la imagen; Tesseract real las
@@ -65,6 +66,39 @@ describe('analyzeFile', () => {
     const engine = fakeEngine([{ text: 'HAND', conf: 90, x0: 0, y0: 0, x1: 1, y1: 1 }, { text: 'ID', conf: 90, x0: 2, y0: 0, x1: 3, y1: 1 }]);
     const a = await analyzeFile(file(HAND_PNG), deps(engine));
     expect(a.kind).toBe('hand');
-    if (a.kind === 'hand') expect(a.draft.handId).toBeNull();
+    // Sin nada que leer, el identificador y la fecha salen del propio archivo.
+    if (a.kind === 'hand') expect(a.draft.handId).toMatch(/^img-/);
+  });
+});
+
+describe('withImportFallbacks', () => {
+  const f = file(HAND_PNG);
+
+  it('rellena identificador y fecha cuando la captura no los enseña', () => {
+    const d = withImportFallbacks(emptyHandDraft(), f);
+    expect(d.handId).toMatch(/^img-[0-9a-f]{16}$/);
+    expect(d.playedAt).toBe(f.lastModified);
+    // El identificador inventado no se puede contrastar con la captura: deja de estar marcado.
+    expect(d.uncertain).not.toContain('handId');
+    // La fecha del archivo sí conviene revisarla.
+    expect(d.uncertain).toContain('playedAt');
+  });
+
+  it('el mismo archivo da siempre el mismo identificador, para detectar repetidas', () => {
+    expect(withImportFallbacks(emptyHandDraft(), f).handId).toBe(withImportFallbacks(emptyHandDraft(), f).handId);
+    expect(withImportFallbacks(emptyHandDraft(), file(SUMMARY_PNG)).handId).not.toBe(withImportFallbacks(emptyHandDraft(), f).handId);
+  });
+
+  it('no toca el borrador si la captura ya traía los dos datos', () => {
+    const read = { ...emptyHandDraft(), handId: '1323539300829384704', playedAt: 123, uncertain: [] as never[] };
+    expect(withImportFallbacks(read, f)).toBe(read);
+  });
+
+  it('respeta el dato leído y solo completa el que falta', () => {
+    const d = withImportFallbacks({ ...emptyHandDraft(), handId: '1323539300829384704' }, f);
+    expect(d.handId).toBe('1323539300829384704');
+    expect(d.playedAt).toBe(f.lastModified);
+    // Aquí el identificador venía de la captura, así que su marca se mantiene tal cual.
+    expect(d.uncertain).toContain('handId');
   });
 });

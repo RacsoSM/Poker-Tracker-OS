@@ -12,7 +12,8 @@ let engine: OcrEngine;
 beforeAll(async () => { engine = await createOcrEngine(nodeOcrPaths()); });
 afterAll(async () => { await engine.terminate(); });
 
-const file = (name: string): IncomingFile => ({ bytes: fixtureBytes(name), mime: 'image/png', lastModified: 1, name });
+const LAST_MODIFIED = 1759490000000;
+const file = (name: string): IncomingFile => ({ bytes: fixtureBytes(name), mime: 'image/png', lastModified: LAST_MODIFIED, name });
 const deps = () => ({ engine, decode: async (f: IncomingFile) => decodePng(f.bytes), templates: loadSeedTemplates(), heroName: 'RacsoSM' });
 
 describe('analyzeFile sobre capturas del móvil', () => {
@@ -25,7 +26,14 @@ describe('analyzeFile sobre capturas del móvil', () => {
   it('mano ganada desde el straddle', async () => {
     const a = await analyzeFile(file(MOBILE_HAND_PNGS[0]), deps());
     expect(a.kind).toBe('hand');
-    if (a.kind === 'hand') expect(a.draft).toMatchObject({ heroPosition: 'UTG', heroResultCny: 96.23, kind: 'study' });
+    if (a.kind === 'hand') {
+      expect(a.draft).toMatchObject({ heroPosition: 'UTG', heroResultCny: 96.23, kind: 'study' });
+      // El móvil no enseña identificador ni fecha: se completan desde el archivo.
+      expect(a.draft.handId).toMatch(/^img-[0-9a-f]{16}$/);
+      expect(a.draft.playedAt).toBe(LAST_MODIFIED);
+      expect(a.draft.uncertain).not.toContain('handId');
+      expect(a.draft.uncertain).toContain('playedAt');
+    }
   });
 
   it('mano con all-in en el turn', async () => {
