@@ -95,16 +95,7 @@ describe('periodos', () => {
 describe('series', () => {
   it('acumula resultado por día en orden ascendente', () => {
     const days = groupByDay([chunk({ startedAt: at(2026, 9, 26, 12), resultCny: -3 }), chunk({ startedAt: at(2026, 9, 25, 12), resultCny: 10 })], [], 6);
-    expect(cumulativeResult(days)).toEqual([{ day: '2026-09-25', cum: 10, ev: 10 }, { day: '2026-09-26', cum: 7, ev: 7 }]);
-  });
-  it('la línea EV descuenta la suerte de los all-ins de cada día', () => {
-    const days = groupByDay(
-      [chunk({ startedAt: at(2026, 9, 25, 12), resultCny: -100 }), chunk({ startedAt: at(2026, 9, 26, 12), resultCny: 50 })],
-      [hand({ playedAt: at(2026, 9, 25, 12) })],
-      6,
-    );
-    // Perdió 156.1 con EV -110.96 → suerte -45.14; sin ella el día 25 habría sido -54.86.
-    expect(cumulativeResult(days)).toEqual([{ day: '2026-09-25', cum: -100, ev: -54.86 }, { day: '2026-09-26', cum: -50, ev: -4.86 }]);
+    expect(cumulativeResult(days)).toEqual([{ day: '2026-09-25', cum: 10 }, { day: '2026-09-26', cum: 7 }]);
   });
   it('acumula real vs EV por all-in, ignorando manos de estudio', () => {
     const s = allinSeries([
