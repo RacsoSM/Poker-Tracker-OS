@@ -17,6 +17,8 @@ export function ChartsPage() {
   const days = groupByDay(d.chunks, d.hands, d.settings.dayCutoffHour);
   const cum = cumulativeResult(days).map((p) => ({ ...p, label: fmtDay(p.day).slice(0, 5) }));
   const ev = allinSeries(d.hands);
+  const hasAllins = days.some((x) => x.allins > 0);
+  const luck = cum.length ? cum[cum.length - 1].cum - cum[cum.length - 1].ev : 0;
   return (
     <section className="page">
       <h1>Gráficas</h1>
@@ -24,6 +26,11 @@ export function ChartsPage() {
       <StatCards stats={aggregate(d.chunks, d.hands)} />
 
       <h2>Resultado acumulado</h2>
+      {hasAllins && (
+        <p className="muted">
+          Real − EV: <span className={luck >= 0 ? 'pos' : 'neg'}>{fmtCny(luck)}</span>
+        </p>
+      )}
       {cum.length === 0 ? (
         <p className="muted">Sin tramos en este periodo.</p>
       ) : (
@@ -33,7 +40,9 @@ export function ChartsPage() {
             <XAxis dataKey="label" {...axis} />
             <YAxis {...axis} width={56} />
             <Tooltip contentStyle={tooltipStyle} formatter={money} />
-            <Line type="monotone" dataKey="cum" name="Resultado" stroke="var(--accent)" strokeWidth={2} dot={false} />
+            {hasAllins && <Legend />}
+            <Line type="monotone" dataKey="cum" name="Ganado" stroke="var(--pos)" strokeWidth={2} dot={false} />
+            {hasAllins && <Line type="monotone" dataKey="ev" name="EV all-in" stroke="var(--neg)" strokeWidth={2} dot={false} />}
           </LineChart>
         </ResponsiveContainer>
       )}

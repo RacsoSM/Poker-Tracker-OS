@@ -98,11 +98,13 @@ export function inRange(day: string, range: { from: string; to: string } | null)
   return !range || (day >= range.from && day <= range.to);
 }
 
-export function cumulativeResult(days: DayStats[]): { day: string; cum: number }[] {
+// cum: lo ganado de verdad (línea verde). ev: lo mismo quitando la suerte de los all-ins (línea roja).
+export function cumulativeResult(days: DayStats[]): { day: string; cum: number; ev: number }[] {
   let cum = 0;
+  let ev = 0;
   return [...days]
     .sort((a, b) => a.day.localeCompare(b.day))
-    .map((d) => ({ day: d.day, cum: (cum = round2(cum + d.resultCny)) }));
+    .map((d) => ({ day: d.day, cum: (cum = round2(cum + d.resultCny)), ev: (ev = round2(ev + d.resultCny - d.luckCny)) }));
 }
 
 export function allinSeries(hands: Hand[]): { n: number; real: number; ev: number }[] {
