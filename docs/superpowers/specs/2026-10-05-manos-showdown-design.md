@@ -33,7 +33,7 @@ Una mano cuenta como showdown si el héroe sigue en ella cuando se resuelve el b
 Todos los campos nuevos son **opcionales**, de modo que los datos existentes, las copias de seguridad antiguas y los registros de la nube siguen siendo válidos sin migración de contenido.
 
 ### Hand
-- `showdown?: boolean` — `true` si la mano llegó al showdown según §1. Ausente equivale a `false`.
+- `showdown?: boolean` — `true` si la mano llegó al showdown según §1. Lo propone el detector (§3.3) y el usuario lo confirma. Ausente equivale a `false`.
 - `chunkId?: string` — tramo al que pertenece la mano. Solo es obligatorio para que la mano cuente en las líneas (§4); las manos de estudio pueden seguir sin tramo.
 
 Una mano `kind = "allin"` es siempre de showdown: al guardar, `showdown` se fuerza a `true`. `kind` y `showdown` son independientes en el resto de casos (una mano de estudio puede ser de showdown).
@@ -57,17 +57,48 @@ Los campos viajan dentro del JSON del registro, sin cambios en `sync/` ni en `fi
 ### 3.1 Subir manos de showdown de un tramo
 - En el **detalle del día**, cada tramo muestra el botón **"Subir manos de showdown"**.
 - Abre el selector de archivos (múltiple) y entra en el flujo de subida normal (§5 de v1) en **modo showdown**, con el tramo como destino:
-  - Cada borrador de mano llega con `chunkId = tramo.id` y `showdown = true`.
+  - Cada borrador de mano llega con `chunkId = tramo.id` y `showdown` = lo que diga el detector (§3.3).
   - `playedAt` se toma de `tramo.startedAt` en lugar del momento de subida, para que la mano caiga en el mismo día de juego que su tramo aunque se suba al día siguiente.
-  - El formulario muestra arriba "Showdown · tramo HH:MM (resultado)" y la casilla **"Llegó al showdown"**, marcada y editable.
+  - El formulario muestra arriba "Showdown · tramo HH:MM (resultado)" y la casilla **"Llegó al showdown"**, editable.
+  - Si el detector dice que **no** hubo showdown, la casilla sale desmarcada y aparece el aviso "Esta mano no parece de showdown". El usuario decide. Así se cuela menos una mano equivocada en el lote.
 - Al terminar el lote se pregunta: **"¿Ya subiste todas las manos de showdown de este tramo?"** Sí → `showdownComplete = true`. No → queda pendiente y se puede marcar después.
 
 ### 3.2 Subida normal (botón "+")
-- El formulario de mano gana dos controles: la casilla **"Llegó al showdown"** y un selector **"Tramo"** con los tramos del mismo día de juego (por defecto ninguno).
+- El formulario de mano gana dos controles: la casilla **"Llegó al showdown"** (prerrellenada por el detector) y un selector **"Tramo"** con los tramos del mismo día de juego (por defecto ninguno).
 - Si se elige un tramo, `playedAt` pasa a ser `tramo.startedAt`, igual que en §3.1.
 
-### 3.3 Detección automática
-Fuera de alcance en esta versión: la captura no distingue con fiabilidad "showdown" de "fold en el river". El valor lo fija el modo de subida y el usuario lo confirma.
+### 3.3 Detección automática del showdown
+El parser de manos (`parsers/hand`) añade al borrador `showdown: boolean | null` y, cuando no está seguro, el campo `'showdown'` a `uncertain` (casilla en amarillo). Combina cuatro señales de la captura.
+
+**Señales**
+- **S1 · El héroe foldea.** En alguna columna de calle (PRE-FLOP, FLOP, TURN, RIVER), la casilla de acción del héroe dice "Fold" (escritorio) o "No ir" (móvil). La casilla se localiza como hoy la posición: la fila del héroe en esa columna (§10a de v1).
+- **S2 · All-in con equity.** El parser ya encontró porcentajes de equity (`kind = "allin"`). El bote se resolvió con cartas.
+- **S3 · Jugadores que siguen al final.** `vivos = N − folds`, donde `N` es el número de filas de la columna RIVER (= jugadores) y `folds` es el número de casillas "Fold"/"No ir" en todas las columnas de calle. Cada jugador foldea como mucho una vez. Hay showdown si `vivos ≥ 2`.
+- **S4 · Cartas de rivales boca arriba.** En la columna RIVER, cada fila tiene dos cartas pequeñas: boca arriba (fondo blanco) o boca abajo (reverso oscuro con trama). Se clasifican por píxeles, con la fracción de píxeles claros en la zona de las cartas de cada fila ya detectada (`vision/rows`). Hay showdown si al menos un rival, es decir una fila distinta de la del héroe, enseña sus cartas. Las del héroe no cuentan, porque la captura las muestra siempre, incluso cuando foldea.
+
+El vocabulario de fold (`Fold`, `No ir`) va en una lista en `parsers/` para poder ampliarla con otros idiomas.
+
+**Decisión**
+
+| Caso | `showdown` | ¿Dudoso? |
+|---|---|---|
+| S1: el héroe foldeó | `false` | no |
+| S2: all-in con equity | `true` | no |
+| S3 y S4 dicen "sí" | `true` | no |
+| S3 y S4 dicen "no" | `false` | no (el héroe ganó sin que le pagaran) |
+| S3 y S4 no coinciden | lo que diga S4 | sí |
+| No se pudo leer la columna RIVER | `null` | sí |
+
+Por qué hacen falta S3 y S4 a la vez:
+- **S3 puede fallar** si la captura del móvil está recortada y falta parte de una columna. Faltarían folds y saldría un falso "sí".
+- **S4 puede fallar** si el rival pierde en el showdown y tira sus cartas sin enseñarlas, o si un rival enseña cartas voluntariamente tras foldear.
+
+Cuando no coinciden, la mano queda en amarillo para que el usuario la confirme.
+
+**Comprobación con los fixtures actuales**
+- `hand-1323539300829384704` con héroe `RacsoSM`: foldea en el FLOP (S1) → `false`.
+- La misma mano con héroe `HiTeR2504`: all-in con 13 % (S2) → `true`. S3 da 8 − 6 = 2 vivos y S4 ve las cartas de 超激进流, así que coinciden.
+- `mobile-hand-01` y `mobile-hand-02`: all-in con equity (S2) → `true`. S3 y S4 coinciden.
 
 ### 3.4 Duplicados
 Sin cambios: el `handId` sintético por huella del archivo ya impide subir dos veces la misma captura.
@@ -129,7 +160,6 @@ Cada tramo muestra: manos de showdown vinculadas (cantidad y % de sus manos), su
 
 ## 7. Fuera de alcance
 
-- Detectar el showdown automáticamente desde la captura.
 - Leer con OCR una lista o historial de manos en lugar de una captura por mano.
 - Líneas ajustadas a EV dentro de showdown y sin showdown.
 - Estadísticas de calle (WTSD, W$SD, WWSF): necesitan las manos que no llegan al showdown.
@@ -144,5 +174,14 @@ Cada tramo muestra: manos de showdown vinculadas (cantidad y % de sus manos), su
   - Avisos de §4.5 en sus bordes (30 manos, 25 %).
 - **`db/`:** la migración a `version(3)` conserva las filas; borrar un tramo desvincula sus manos.
 - **Copia de seguridad:** exportar e importar conserva los campos nuevos; una copia antigua sin ellos se importa igual; un `chunkId` huérfano se elimina.
-- **Importación:** en modo showdown el borrador sale con `chunkId`, `showdown = true` y `playedAt = tramo.startedAt`.
+- **Importación:** en modo showdown el borrador sale con `chunkId`, el `showdown` del detector y `playedAt = tramo.startedAt`.
+- **Detector (`parsers/hand`), sobre el OCR serializado:**
+  - Los cuatro fixtures de §3.3 dan el resultado esperado.
+  - Tests unitarios de la tabla de decisión con señales sintéticas, incluidos el caso en que S3 y S4 no coinciden y el de la columna RIVER ilegible.
+  - Clasificación de cartas boca arriba / boca abajo sobre las filas RIVER de los fixtures: en `hand-1323539300829384704` hay 3 filas boca arriba (incluida la del héroe) y 5 boca abajo.
+- **Fixtures nuevos que pedir al usuario** (escritorio y móvil si es posible):
+  - Gana el bote sin showdown (el rival foldea al river) → `false`.
+  - Showdown sin all-in, pagando en el river, ganado y perdido → `true`.
+  - Pierde en el showdown y el rival gana sin enseñar → comprobar S3 frente a S4.
+  - Captura del móvil recortada → comprobar que queda como dudosa.
 - **Formulario:** una mano `allin` se guarda con `showdown = true` aunque la casilla esté desmarcada.
