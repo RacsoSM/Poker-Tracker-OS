@@ -18,6 +18,7 @@ export function ChartsPage() {
   const cum = cumulativeResult(days).map((p) => ({ ...p, label: fmtDay(p.day).slice(0, 5) }));
   const ev = allinSeries(d.hands);
   const hasShowdown = days.some((x) => x.showdownHands > 0);
+  const hasAllins = days.some((x) => x.allins > 0);
   // Manos de showdown en días sin "My stats": su resultado se restaría a la línea roja sin tener de dónde.
   const orphanShowdown = days.filter((x) => x.chunks === 0).reduce((n, x) => n + x.showdownHands, 0);
   return (
@@ -40,6 +41,7 @@ export function ChartsPage() {
             <Line type="monotone" dataKey="cum" name="Ganado" stroke="var(--pos)" strokeWidth={2} dot={false} />
             {hasShowdown && <Line type="monotone" dataKey="sd" name="Showdown" stroke="var(--accent)" strokeWidth={2} dot={false} />}
             {hasShowdown && <Line type="monotone" dataKey="nsd" name="Sin showdown" stroke="var(--neg)" strokeWidth={2} dot={false} />}
+            {hasAllins && <Line type="monotone" dataKey="ev" name="EV all-in" stroke="var(--ev)" strokeWidth={2} strokeDasharray="5 3" dot={false} />}
           </LineChart>
         </ResponsiveContainer>
       )}

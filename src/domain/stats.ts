@@ -109,15 +109,18 @@ export function inRange(day: string, range: { from: string; to: string } | null)
 }
 
 // cum: lo ganado (línea verde). sd: lo ganado en manos con showdown (azul). nsd: el resto, sin showdown (roja).
-export function cumulativeResult(days: DayStats[]): { day: string; cum: number; sd: number; nsd: number }[] {
+// ev: lo ganado quitando la suerte de los all-ins (naranja).
+export function cumulativeResult(days: DayStats[]): { day: string; cum: number; sd: number; nsd: number; ev: number }[] {
   let cum = 0;
   let sd = 0;
+  let luck = 0;
   return [...days]
     .sort((a, b) => a.day.localeCompare(b.day))
     .map((d) => {
       cum = round2(cum + d.resultCny);
       sd = round2(sd + d.showdownCny);
-      return { day: d.day, cum, sd, nsd: round2(cum - sd) };
+      luck = round2(luck + d.luckCny);
+      return { day: d.day, cum, sd, nsd: round2(cum - sd), ev: round2(cum - luck) };
     });
 }
 
