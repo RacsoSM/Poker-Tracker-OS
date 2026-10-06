@@ -26,7 +26,7 @@ const handZ = z.object({
   kind: z.enum(['allin', 'study']),
   allin: z.object({ street: z.enum(['preflop', 'flop', 'turn']), heroEquity: z.number().min(0).max(1), potContested: z.number(), heroInvested: z.number() }).optional(),
   showdown: z.boolean().optional(),
-  tags: z.array(z.string()), note: z.string().optional(), imageId: z.string(), createdAt: z.number(),
+  tags: z.array(z.string()), note: z.string().optional(), imageId: z.string().optional(), createdAt: z.number(),
 });
 const imageMetaZ = z.object({ id: z.string(), mime: z.string(), width: z.number(), height: z.number(), file: z.string() });
 const templateZ = z.object({ id: z.string(), rank: rankZ, sizeClass: z.enum(['board', 'hole']), glyph: z.string().regex(/^[01]{384}$/) });

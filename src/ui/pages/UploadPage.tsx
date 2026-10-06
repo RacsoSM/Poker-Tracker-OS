@@ -6,6 +6,7 @@ import type { Hand, HandValues } from '../../domain/types';
 import { decodeImageFile } from '../../import/decodeImage';
 import { templatesToLearn } from '../../import/learn';
 import { analyzeFile, importedHandDraft, type Analysis, type IncomingFile } from '../../import/pipeline';
+import { manualHandId } from '../../import/syntheticId';
 import { takeSharedFiles } from '../../import/shared';
 import { getBrowserEngine } from '../../ocr/loader';
 import { emptyHandDraft } from '../../parsers/hand';
@@ -34,7 +35,7 @@ export function UploadPage() {
   const [params] = useSearchParams();
   const [queue, setQueue] = useState<IncomingFile[]>([]);
   const [index, setIndex] = useState(0);
-  const [manual, setManual] = useState(false);
+  const [manual, setManual] = useState<'session' | 'hand' | null>(null);
   const [dragging, setDragging] = useState(false);
   const [dropNotice, setDropNotice] = useState<string | null>(null);
   const [state, setState] = useState<State>({ status: 'idle' });
@@ -102,7 +103,30 @@ export function UploadPage() {
 
   if (!settings) return <p className="muted page">Cargando…</p>;
 
-  if (manual && !current) {
+  if (manual === 'hand' && !current) {
+    return (
+      <section className="page">
+        <h1>Agregar mano manualmente</h1>
+        <HandForm
+          initial={handStateFromDraft({ ...emptyHandDraft(), handId: manualHandId(), playedAt: Date.now(), uncertain: [] })}
+          onSave={async (v) => {
+            try {
+              const saved = await addHand(db, v);
+              setManual(null);
+              navigate(`/manos/${saved.id}`);
+            } catch (e) {
+              if (e instanceof DuplicateHandError) window.alert('Ya existe otra mano con ese ID.');
+              else throw e;
+            }
+          }}
+          onCancel={() => setManual(null)}
+          cancelLabel="Cancelar"
+        />
+      </section>
+    );
+  }
+
+  if (manual === 'session' && !current) {
     return (
       <section className="page">
         <h1>Agregar sesión manualmente</h1>
@@ -110,10 +134,10 @@ export function UploadPage() {
           initial={{ startedAt: Date.now(), resultCny: null, hands: null, durationSec: null }}
           onSave={async (v) => {
             if (!(await saveChunk(v))) return;
-            setManual(false);
+            setManual(null);
             navigate('/dias');
           }}
-          onCancel={() => setManual(false)}
+          onCancel={() => setManual(null)}
           cancelLabel="Cancelar"
         />
       </section>
@@ -143,8 +167,11 @@ export function UploadPage() {
           <input type="file" accept="*/*" multiple hidden onChange={(e) => pick(e.target.files)} />
         </label>
         <h2>¿Sin captura?</h2>
-        <p className="muted">Escribe a mano el resultado, las manos y la duración de una sesión.</p>
-        <button type="button" className="btn" onClick={() => setManual(true)}>Agregar sesión manualmente</button>
+        <p className="muted">Escribe a mano el resultado, las manos y la duración de una sesión, o los datos de una mano.</p>
+        <div className="btn-row">
+          <button type="button" className="btn" onClick={() => setManual('session')}>Agregar sesión manualmente</button>
+          <button type="button" className="btn" onClick={() => setManual('hand')}>Agregar mano manualmente</button>
+        </div>
       </section>
     );
   }

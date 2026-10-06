@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmtCny } from '../../domain/format';
 import { allinEv } from '../../domain/stats';
 import { POSITIONS, STREETS, type HandValues, type Position, type Street } from '../../domain/types';
-import { isSyntheticHandId } from '../../import/syntheticId';
+import { isManualHandId, isSyntheticHandId } from '../../import/syntheticId';
 import type { PartialCard } from '../../parsers/hand';
 import { CardPicker } from './CardPicker';
 import { DateTimeField, MoneyField, NumberField } from './fields';
@@ -32,6 +32,7 @@ export function HandForm({ initial, uncertain = [], onSave, onCancel, cancelLabe
         <span>ID de la mano</span>
         <input aria-label="ID de la mano" value={s.handId} onChange={(e) => set('handId', e.target.value)} />
         {isSyntheticHandId(s.handId) && <small className="muted">Generado a partir de la imagen: sirve para detectar si subes la misma captura dos veces.</small>}
+        {isManualHandId(s.handId) && <small className="muted">Generado al azar: cámbialo por el ID real si lo tienes.</small>}
       </label>
       <DateTimeField label="Fecha y hora" value={s.playedAt} onChange={(v) => set('playedAt', v)} flagged={flagged.has('playedAt')} />
       <label className={`field ${flagged.has('heroPosition') || !s.heroPosition ? 'flag' : ''}`}>

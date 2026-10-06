@@ -44,7 +44,8 @@ export interface Hand {
   showdown?: boolean;
   tags: string[];
   note?: string;
-  imageId: string;
+  /** Ausente en las manos agregadas a mano (no tienen captura). */
+  imageId?: string;
   createdAt: number;
 }
 

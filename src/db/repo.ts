@@ -67,13 +67,14 @@ export async function findHandByHandId(db: PtDb, handId: string): Promise<Hand |
   return db.hands.where('handId').equals(handId).first();
 }
 
-export async function addHand(db: PtDb, values: HandValues, image: ImageInput): Promise<Hand> {
-  const imageId = newId();
-  const saved: Hand = { ...values, id: newId(), imageId, createdAt: Date.now() };
+/** Sin `image` se guarda una mano manual, sin captura. */
+export async function addHand(db: PtDb, values: HandValues, image?: ImageInput): Promise<Hand> {
+  const imageId = image ? newId() : undefined;
+  const saved: Hand = { ...values, id: newId(), ...(imageId ? { imageId } : {}), createdAt: Date.now() };
   await db.transaction('rw', db.hands, db.images, async () => {
     const existing = await findHandByHandId(db, values.handId);
     if (existing) throw new DuplicateHandError(existing.id);
-    await db.images.add({ ...image, id: imageId });
+    if (image && imageId) await db.images.add({ ...image, id: imageId });
     await db.hands.add(saved);
   });
   return saved;
@@ -94,7 +95,7 @@ export async function deleteHand(db: PtDb, id: string): Promise<void> {
     const h = await db.hands.get(id);
     if (!h) return;
     await db.hands.delete(id);
-    await db.images.delete(h.imageId);
+    if (h.imageId) await db.images.delete(h.imageId);
   });
 }
 

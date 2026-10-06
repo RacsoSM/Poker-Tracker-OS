@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fixtureBytes, MOBILE_HAND_PNGS } from '../test/fixtures';
-import { hashBytes, isSyntheticHandId, syntheticHandId, SYNTHETIC_PREFIX } from './syntheticId';
+import { hashBytes, isManualHandId, isSyntheticHandId, manualHandId, syntheticHandId, SYNTHETIC_PREFIX } from './syntheticId';
 
 const bytes = (...n: number[]) => new Uint8Array(n);
 
@@ -26,5 +26,15 @@ describe('syntheticHandId', () => {
     expect(isSyntheticHandId(syntheticHandId(bytes(1)))).toBe(true);
     expect(isSyntheticHandId('1323539300829384704')).toBe(false);
     expect(SYNTHETIC_PREFIX).toBe('img-');
+  });
+});
+
+describe('manualHandId', () => {
+  it('genera IDs distintos, reconocibles como manuales y no como de captura', () => {
+    const a = manualHandId();
+    expect(a).toMatch(/^man-[0-9a-f]{16}$/);
+    expect(manualHandId()).not.toBe(a);
+    expect(isManualHandId(a)).toBe(true);
+    expect(isSyntheticHandId(a)).toBe(false);
   });
 });

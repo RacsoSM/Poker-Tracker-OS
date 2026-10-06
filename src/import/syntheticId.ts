@@ -32,3 +32,14 @@ export function syntheticHandId(bytes: Uint8Array): string {
 export function isSyntheticHandId(handId: string): boolean {
   return handId.startsWith(SYNTHETIC_PREFIX);
 }
+
+// Las manos agregadas a mano no tienen archivo del que sacar la huella: llevan uno aleatorio.
+export const MANUAL_PREFIX = 'man-';
+
+export function manualHandId(): string {
+  return MANUAL_PREFIX + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+}
+
+export function isManualHandId(handId: string): boolean {
+  return handId.startsWith(MANUAL_PREFIX);
+}

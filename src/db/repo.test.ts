@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, type HandValues } from '../domain/types';
 import { PtDb } from './db';
 import {
-  addChunk, addHand, addTemplates, deleteChunk, DuplicateHandError, findHandByHandId, findSimilarChunk,
+  addChunk, addHand, addTemplates, deleteChunk, deleteHand, DuplicateHandError, findHandByHandId, findSimilarChunk,
   getSettings, loadTemplates, saveSettings, updateHand,
 } from './repo';
 
@@ -29,6 +29,16 @@ describe('repo', () => {
     await deleteChunk(db, c.id);
     expect(await db.chunks.count()).toBe(0);
     expect(await db.images.count()).toBe(0);
+  });
+
+  it('guarda y borra una mano manual, sin captura', async () => {
+    const db = newDb();
+    const h = await addHand(db, HAND);
+    expect(h.imageId).toBeUndefined();
+    expect(await db.hands.get(h.id)).toMatchObject({ handId: HAND.handId });
+    expect(await db.images.count()).toBe(0);
+    await deleteHand(db, h.id);
+    expect(await db.hands.count()).toBe(0);
   });
 
   it('guarda y borra un tramo manual, sin captura', async () => {

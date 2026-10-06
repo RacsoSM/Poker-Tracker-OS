@@ -26,11 +26,13 @@ export function HandDetailPage() {
     <section className="page">
       <h1>Mano {hand.handId}</h1>
       {url && (
-        <div className={`zoom-wrap ${zoomed ? 'zoomed' : ''}`}>
-          <img src={url} alt="Mano descargada" onClick={() => setZoomed(!zoomed)} />
-        </div>
+        <>
+          <div className={`zoom-wrap ${zoomed ? 'zoomed' : ''}`}>
+            <img src={url} alt="Mano descargada" onClick={() => setZoomed(!zoomed)} />
+          </div>
+          <p className="muted small">Toca la imagen para hacer zoom.</p>
+        </>
       )}
-      <p className="muted small">Toca la imagen para hacer zoom.</p>
       {editing ? (
         <HandForm
           initial={handStateFromHand(hand)}
