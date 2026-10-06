@@ -8,7 +8,7 @@ const complete: HandFormState = {
   board: [{ rank: '5', suit: 'c' }, { rank: 'Q', suit: 'd' }, { rank: '8', suit: 'h' }],
   heroResultCny: -156.1, kind: 'allin',
   allin: { street: 'flop', heroEquity: 0.13, potContested: 347.2, heroInvested: 156.1 },
-  tags: ' cooler, flop ,', note: '',
+  showdown: false, tags: ' cooler, flop ,', note: '',
 };
 
 describe('toHandValues', () => {
@@ -19,8 +19,12 @@ describe('toHandValues', () => {
       board: [{ rank: '5', suit: 'c' }, { rank: 'Q', suit: 'd' }, { rank: '8', suit: 'h' }],
       heroResultCny: -156.1, kind: 'allin',
       allin: { street: 'flop', heroEquity: 0.13, potContested: 347.2, heroInvested: 156.1 },
-      tags: ['cooler', 'flop'], note: undefined,
+      showdown: true, tags: ['cooler', 'flop'], note: undefined,
     });
+  });
+  it('showdown: un all-in siempre cuenta; si no, manda la casilla', () => {
+    expect(toHandValues({ ...complete, kind: 'study' })?.showdown).toBe(false);
+    expect(toHandValues({ ...complete, kind: 'study', showdown: true })?.showdown).toBe(true);
   });
   it('estudio: descarta los datos de all-in', () => {
     expect(toHandValues({ ...complete, kind: 'study' })?.allin).toBeUndefined();

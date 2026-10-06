@@ -79,7 +79,7 @@ describe('guardado seguro', () => {
       <HandForm
         initial={{
           handId: '1', playedAt: 1, heroPosition: 'BTN',
-          heroCards: [{ rank: 'K', suit: 's' }, { rank: 'Q', suit: 's' }], board: [], heroResultCny: -156.1, kind: 'allin',
+          heroCards: [{ rank: 'K', suit: 's' }, { rank: 'Q', suit: 's' }], board: [], heroResultCny: -156.1, kind: 'allin', showdown: true,
           allin: { street: 'flop', heroEquity: 0.03, potContested: 347.2, heroInvested: 156.1 }, tags: '', note: '',
         }}
         uncertain={['allin']}

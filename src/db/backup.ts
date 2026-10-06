@@ -25,6 +25,7 @@ const handZ = z.object({
   heroCards: z.tuple([cardZ, cardZ]), board: z.array(cardZ).max(5), heroResultCny: z.number(),
   kind: z.enum(['allin', 'study']),
   allin: z.object({ street: z.enum(['preflop', 'flop', 'turn']), heroEquity: z.number().min(0).max(1), potContested: z.number(), heroInvested: z.number() }).optional(),
+  showdown: z.boolean().optional(),
   tags: z.array(z.string()), note: z.string().optional(), imageId: z.string(), createdAt: z.number(),
 });
 const imageMetaZ = z.object({ id: z.string(), mime: z.string(), width: z.number(), height: z.number(), file: z.string() });

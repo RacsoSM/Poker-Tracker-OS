@@ -5,7 +5,7 @@ import { useDb } from '../../db/context';
 import { deleteHand, DuplicateHandError, updateHand } from '../../db/repo';
 import { formatCard } from '../../domain/cards';
 import { fmtCny, toLocalInput } from '../../domain/format';
-import { allinEv, handLuck } from '../../domain/stats';
+import { allinEv, handLuck, wentToShowdown } from '../../domain/stats';
 import { signClass } from '../format';
 import { CardChip } from '../components/CardChip';
 import { HandForm } from '../components/HandForm';
@@ -52,7 +52,7 @@ export function HandDetailPage() {
             <div className="grow">
               <div>{hand.heroCards.map((c) => <CardChip key={c.rank + c.suit} card={c} />)} · {hand.heroPosition}</div>
               <div className="muted small">Tablero: {hand.board.map(formatCard).join(' ') || '—'}</div>
-              <div className="muted small">{toLocalInput(hand.playedAt).replace('T', ' ')}</div>
+              <div className="muted small">{toLocalInput(hand.playedAt).replace('T', ' ')}{wentToShowdown(hand) && ' · Showdown'}</div>
             </div>
             <span className={signClass(hand.heroResultCny)}>{fmtCny(hand.heroResultCny)}</span>
           </div>

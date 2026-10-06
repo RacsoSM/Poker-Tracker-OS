@@ -65,6 +65,10 @@ export function HandForm({ initial, uncertain = [], onSave, onCancel, cancelLabe
         <label><input type="radio" checked={s.kind === 'allin'} onChange={() => set('kind', 'allin')} /> All-in propio (cuenta para EV)</label>
         <label><input type="radio" checked={s.kind === 'study'} onChange={() => set('kind', 'study')} /> Estudio</label>
       </fieldset>
+      <label>
+        <input type="checkbox" checked={s.kind === 'allin' || s.showdown} disabled={s.kind === 'allin'} onChange={(e) => set('showdown', e.target.checked)} />
+        {' '}Llegó a showdown{s.kind === 'allin' && ' (todo all-in cuenta como showdown)'}
+      </label>
       {s.kind === 'allin' && (
         <>
           <label className={`field ${s.allin.street === null ? 'flag' : ''}`}>

@@ -17,6 +17,9 @@ export function ChartsPage() {
   const days = groupByDay(d.chunks, d.hands, d.settings.dayCutoffHour);
   const cum = cumulativeResult(days).map((p) => ({ ...p, label: fmtDay(p.day).slice(0, 5) }));
   const ev = allinSeries(d.hands);
+  const hasShowdown = days.some((x) => x.showdownHands > 0);
+  // Manos de showdown en días sin "My stats": su resultado se restaría a la línea roja sin tener de dónde.
+  const orphanShowdown = days.filter((x) => x.chunks === 0).reduce((n, x) => n + x.showdownHands, 0);
   return (
     <section className="page">
       <h1>Gráficas</h1>
@@ -33,9 +36,20 @@ export function ChartsPage() {
             <XAxis dataKey="label" {...axis} />
             <YAxis {...axis} width={56} />
             <Tooltip contentStyle={tooltipStyle} formatter={money} />
-            <Line type="monotone" dataKey="cum" name="Resultado" stroke="var(--accent)" strokeWidth={2} dot={false} />
+            {hasShowdown && <Legend />}
+            <Line type="monotone" dataKey="cum" name="Ganado" stroke="var(--pos)" strokeWidth={2} dot={false} />
+            {hasShowdown && <Line type="monotone" dataKey="sd" name="Showdown" stroke="var(--accent)" strokeWidth={2} dot={false} />}
+            {hasShowdown && <Line type="monotone" dataKey="nsd" name="Sin showdown" stroke="var(--neg)" strokeWidth={2} dot={false} />}
           </LineChart>
         </ResponsiveContainer>
+      )}
+      {cum.length > 0 && !hasShowdown && (
+        <p className="muted small">Sube las manos que llegaron a showdown para ver las líneas azul (showdown) y roja (sin showdown).</p>
+      )}
+      {orphanShowdown > 0 && (
+        <p className="warning">
+          {orphanShowdown === 1 ? 'Hay 1 mano' : `Hay ${orphanShowdown} manos`} de showdown en días sin sesión (My stats): revisa su fecha o la línea roja saldrá descuadrada.
+        </p>
       )}
 
       <h2>All-ins: real vs EV</h2>

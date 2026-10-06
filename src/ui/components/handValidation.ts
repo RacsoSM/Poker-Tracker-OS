@@ -10,6 +10,7 @@ export interface HandFormState {
   heroResultCny: number | null;
   kind: 'allin' | 'study';
   allin: AllinDraft;
+  showdown: boolean;
   tags: string;
   note: string;
 }
@@ -20,7 +21,9 @@ export function handStateFromDraft(d: HandDraft): HandFormState {
   return {
     handId: d.handId ?? '', playedAt: d.playedAt, heroPosition: d.heroPosition,
     heroCards: d.heroCards.map((c) => ({ ...c })), board: d.board.map((c) => ({ ...c })),
-    heroResultCny: d.heroResultCny, kind: d.kind, allin: d.allin ? { ...d.allin } : { ...EMPTY_ALLIN }, tags: '', note: '',
+    heroResultCny: d.heroResultCny, kind: d.kind, allin: d.allin ? { ...d.allin } : { ...EMPTY_ALLIN },
+    // Sin all-in, solo puede haber showdown si se vio el river.
+    showdown: d.kind === 'allin' || d.board.length === 5, tags: '', note: '',
   };
 }
 
@@ -29,6 +32,7 @@ export function handStateFromHand(h: Hand): HandFormState {
     handId: h.handId, playedAt: h.playedAt, heroPosition: h.heroPosition,
     heroCards: h.heroCards.map((c) => ({ ...c })), board: h.board.map((c) => ({ ...c })),
     heroResultCny: h.heroResultCny, kind: h.kind, allin: h.allin ? { ...h.allin } : { ...EMPTY_ALLIN },
+    showdown: h.kind === 'allin' || h.showdown === true,
     tags: h.tags.join(', '), note: h.note ?? '',
   };
 }
@@ -51,6 +55,7 @@ export function toHandValues(s: HandFormState): HandValues | null {
   return {
     handId, playedAt: s.playedAt, heroPosition: s.heroPosition,
     heroCards: [cards[0], cards[1]], board: cards.slice(2), heroResultCny: s.heroResultCny, kind: s.kind, allin,
+    showdown: s.kind === 'allin' || s.showdown,
     tags: s.tags.split(',').map((t) => t.trim()).filter(Boolean),
     note: s.note.trim() || undefined,
   };

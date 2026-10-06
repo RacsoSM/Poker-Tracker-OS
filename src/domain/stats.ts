@@ -30,6 +30,10 @@ export function handLuck(h: Hand): number {
   return h.kind === 'allin' && h.allin ? round2(h.heroResultCny - allinEv(h.allin)) : 0;
 }
 
+export function wentToShowdown(h: Hand): boolean {
+  return h.kind === 'allin' || h.showdown === true;
+}
+
 export interface Aggregate {
   chunks: number;
   hands: number;
@@ -40,6 +44,9 @@ export interface Aggregate {
   handsPerHour: number | null;
   allins: number;
   luckCny: number;
+  showdownHands: number;
+  /** Suma del resultado de las manos subidas que llegaron a showdown. */
+  showdownCny: number;
 }
 
 export interface DayStats extends Aggregate { day: string }
@@ -51,6 +58,7 @@ export function aggregate(chunks: SessionChunk[], hands: Hand[]): Aggregate {
   const resultBb = sum(chunks.map((c) => c.resultCny / c.stakes.bb));
   const hours = durationSec / 3600;
   const allinHands = hands.filter((h) => h.kind === 'allin' && h.allin);
+  const showdownHands = hands.filter(wentToShowdown);
   return {
     chunks: chunks.length,
     hands: handCount,
@@ -61,6 +69,8 @@ export function aggregate(chunks: SessionChunk[], hands: Hand[]): Aggregate {
     handsPerHour: hours > 0 ? round2(handCount / hours) : null,
     allins: allinHands.length,
     luckCny: round2(sum(allinHands.map(handLuck))),
+    showdownHands: showdownHands.length,
+    showdownCny: round2(sum(showdownHands.map((h) => h.heroResultCny))),
   };
 }
 
@@ -98,11 +108,17 @@ export function inRange(day: string, range: { from: string; to: string } | null)
   return !range || (day >= range.from && day <= range.to);
 }
 
-export function cumulativeResult(days: DayStats[]): { day: string; cum: number }[] {
+// cum: lo ganado (línea verde). sd: lo ganado en manos con showdown (azul). nsd: el resto, sin showdown (roja).
+export function cumulativeResult(days: DayStats[]): { day: string; cum: number; sd: number; nsd: number }[] {
   let cum = 0;
+  let sd = 0;
   return [...days]
     .sort((a, b) => a.day.localeCompare(b.day))
-    .map((d) => ({ day: d.day, cum: (cum = round2(cum + d.resultCny)) }));
+    .map((d) => {
+      cum = round2(cum + d.resultCny);
+      sd = round2(sd + d.showdownCny);
+      return { day: d.day, cum, sd, nsd: round2(cum - sd) };
+    });
 }
 
 export function allinSeries(hands: Hand[]): { n: number; real: number; ev: number }[] {

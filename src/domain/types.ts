@@ -40,6 +40,8 @@ export interface Hand {
   heroResultCny: number;
   kind: 'allin' | 'study';
   allin?: AllinData;
+  /** Llegó a showdown. Los all-ins siempre cuentan como showdown; ausente en manos guardadas antes de existir el campo. */
+  showdown?: boolean;
   tags: string[];
   note?: string;
   imageId: string;

@@ -61,6 +61,15 @@ describe('aggregate', () => {
     expect(a.allins).toBe(1);
     expect(a.luckCny).toBe(-45.14);
   });
+  it('suma el resultado de las manos con showdown (all-ins y marcadas)', () => {
+    const a = aggregate([], [
+      hand({}),
+      hand({ kind: 'study', allin: undefined, heroResultCny: 40, showdown: true }),
+      hand({ kind: 'study', allin: undefined, heroResultCny: -28 }),
+    ]);
+    expect(a.showdownHands).toBe(2);
+    expect(a.showdownCny).toBe(-116.1);
+  });
 });
 
 describe('groupByDay', () => {
@@ -95,7 +104,18 @@ describe('periodos', () => {
 describe('series', () => {
   it('acumula resultado por día en orden ascendente', () => {
     const days = groupByDay([chunk({ startedAt: at(2026, 9, 26, 12), resultCny: -3 }), chunk({ startedAt: at(2026, 9, 25, 12), resultCny: 10 })], [], 6);
-    expect(cumulativeResult(days)).toEqual([{ day: '2026-09-25', cum: 10 }, { day: '2026-09-26', cum: 7 }]);
+    expect(cumulativeResult(days)).toEqual([{ day: '2026-09-25', cum: 10, sd: 0, nsd: 10 }, { day: '2026-09-26', cum: 7, sd: 0, nsd: 7 }]);
+  });
+  it('separa lo ganado con y sin showdown', () => {
+    const days = groupByDay(
+      [chunk({ startedAt: at(2026, 9, 25, 12), resultCny: -100 }), chunk({ startedAt: at(2026, 9, 26, 12), resultCny: 50 })],
+      [hand({ playedAt: at(2026, 9, 25, 12) }), hand({ playedAt: at(2026, 9, 26, 12), kind: 'study', allin: undefined, heroResultCny: 80, showdown: true })],
+      6,
+    );
+    expect(cumulativeResult(days)).toEqual([
+      { day: '2026-09-25', cum: -100, sd: -156.1, nsd: 56.1 },
+      { day: '2026-09-26', cum: -50, sd: -76.1, nsd: 26.1 },
+    ]);
   });
   it('acumula real vs EV por all-in, ignorando manos de estudio', () => {
     const s = allinSeries([
