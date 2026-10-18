@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { emptyHandDraft } from '../../parsers/hand';
-import { handStateFromDraft, toHandValues, type HandFormState } from './handValidation';
+import { emptyHandDraft, type HandDraft } from '../../parsers/hand';
+import { autoHandValues, handStateFromDraft, REVIEW_TAG, toHandValues, type HandFormState } from './handValidation';
 
 const complete: HandFormState = {
   handId: '1323539300829384704', playedAt: 1, heroPosition: 'BTN',
@@ -45,5 +45,24 @@ describe('toHandValues', () => {
     const s = handStateFromDraft(emptyHandDraft());
     expect(s.handId).toBe('');
     expect(s.allin).toEqual({ street: null, heroEquity: null, potContested: null, heroInvested: null });
+  });
+});
+
+describe('autoHandValues', () => {
+  const read: HandDraft = {
+    ...emptyHandDraft(), handId: 'img-0123456789abcdef', playedAt: 1, heroPosition: 'SB',
+    heroCards: [{ rank: '7', suit: 's' }, { rank: '7', suit: 'c' }],
+    board: [{ rank: 'Q', suit: 'c' }, { rank: '9', suit: 'd' }, { rank: '3', suit: 'd' }, { rank: '6', suit: 'c' }, { rank: 'J', suit: 'd' }],
+    heroResultCny: -123, uncertain: [],
+  };
+  it('mano leída entera: lista para guardar sin formulario ni etiquetas', () => {
+    expect(autoHandValues(read)).toMatchObject({ heroPosition: 'SB', heroResultCny: -123, kind: 'study', showdown: true, tags: [] });
+  });
+  it('con algún dato en duda: se guarda igual, con la etiqueta "revisar"', () => {
+    expect(autoHandValues({ ...read, uncertain: ['allin'] })?.tags).toEqual([REVIEW_TAG]);
+  });
+  it('si falta un dato, no se puede guardar sola', () => {
+    expect(autoHandValues({ ...read, heroResultCny: null })).toBeNull();
+    expect(autoHandValues({ ...read, heroCards: [{ rank: null, suit: 's' }, { rank: '7', suit: 'c' }] })).toBeNull();
   });
 });

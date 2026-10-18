@@ -1,6 +1,9 @@
 import type { Card, Hand, HandValues, Position } from '../../domain/types';
 import type { AllinDraft, HandDraft, PartialCard } from '../../parsers/hand';
 
+/** Etiqueta de las manos guardadas solas con algún dato que el lector no pudo confirmar. */
+export const REVIEW_TAG = 'revisar';
+
 export interface HandFormState {
   handId: string;
   playedAt: number | null;
@@ -59,4 +62,13 @@ export function toHandValues(s: HandFormState): HandValues | null {
     tags: s.tags.split(',').map((t) => t.trim()).filter(Boolean),
     note: s.note.trim() || undefined,
   };
+}
+
+// Las manos subidas se guardan sin pasar por el formulario si el lector sacó todos los datos.
+// Si alguno quedó en duda, se guarda igual con la etiqueta "revisar" para encontrarla luego.
+// null: falta algún dato y hay que completarlo a mano.
+export function autoHandValues(d: HandDraft): HandValues | null {
+  const v = toHandValues(handStateFromDraft(d));
+  if (!v) return null;
+  return d.uncertain.length ? { ...v, tags: [REVIEW_TAG] } : v;
 }

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDb } from '../../db/context';
 import { addChunk, addHand, addTemplates, DuplicateHandError, findHandByHandId, findSimilarChunk, loadTemplates, type ImageInput } from '../../db/repo';
-import type { Hand, HandValues } from '../../domain/types';
+import type { HandValues } from '../../domain/types';
 import { decodeImageFile } from '../../import/decodeImage';
 import { templatesToLearn } from '../../import/learn';
 import { analyzeFile, importedHandDraft, type Analysis, type IncomingFile } from '../../import/pipeline';
@@ -12,7 +12,7 @@ import { getBrowserEngine } from '../../ocr/loader';
 import { emptyHandDraft } from '../../parsers/hand';
 import { emptySummaryDraft } from '../../parsers/summary';
 import { HandForm } from '../components/HandForm';
-import { handStateFromDraft } from '../components/handValidation';
+import { autoHandValues, handStateFromDraft, REVIEW_TAG } from '../components/handValidation';
 import { SummaryForm, type SummaryValues } from '../components/SummaryForm';
 import { useObjectUrl, useSettings } from '../hooks';
 
@@ -20,7 +20,11 @@ type State =
   | { status: 'idle' }
   | { status: 'analyzing' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; analysis: Analysis; duplicate?: Hand };
+  | { status: 'ready'; analysis: Analysis };
+
+/** Manos que se guardaron (o se saltaron por repetidas) sin pedir confirmación en esta tanda. */
+interface AutoBatch { saved: number; review: number; duplicates: number }
+const EMPTY_BATCH: AutoBatch = { saved: 0, review: 0, duplicates: 0 };
 
 async function readFiles(list: File[]): Promise<IncomingFile[]> {
   return Promise.all(
@@ -39,6 +43,8 @@ export function UploadPage() {
   const [dragging, setDragging] = useState(false);
   const [dropNotice, setDropNotice] = useState<string | null>(null);
   const [state, setState] = useState<State>({ status: 'idle' });
+  const batch = useRef<AutoBatch>({ ...EMPTY_BATCH });
+  const [finished, setFinished] = useState<AutoBatch | null>(null);
   const current = queue[index];
   const previewUrl = useObjectUrl(current?.bytes, current?.mime);
   const heroName = settings?.heroName;
@@ -63,7 +69,30 @@ export function UploadPage() {
         const templates = await loadTemplates(db);
         const analysis = await analyzeFile(current, { engine, decode: decodeImageFile, templates, heroName });
         const duplicate = analysis.kind === 'hand' && analysis.draft.handId ? await findHandByHandId(db, analysis.draft.handId) : undefined;
-        if (!cancelled) setState({ status: 'ready', analysis, duplicate });
+        if (cancelled) return;
+        // Las manos no piden confirmación: si se leyó todo se guardan y se pasa a la siguiente.
+        // Solo los resúmenes (My stats) y las manos a las que les falta algún dato se revisan.
+        if (analysis.kind === 'hand') {
+          if (duplicate) {
+            batch.current.duplicates++;
+            next();
+            return;
+          }
+          const values = autoHandValues(analysis.draft);
+          if (values) {
+            try {
+              await addHand(db, values, { bytes: current.bytes, mime: current.mime, width: analysis.image.width, height: analysis.image.height });
+              batch.current.saved++;
+              if (values.tags.includes(REVIEW_TAG)) batch.current.review++;
+            } catch (e) {
+              if (!(e instanceof DuplicateHandError)) throw e;
+              batch.current.duplicates++;
+            }
+            if (!cancelled) next();
+            return;
+          }
+        }
+        setState({ status: 'ready', analysis });
       } catch (e) {
         if (!cancelled) setState({ status: 'error', message: e instanceof Error ? e.message : String(e) });
       }
@@ -79,7 +108,10 @@ export function UploadPage() {
       setQueue([]);
       setIndex(0);
       setState({ status: 'idle' });
-      navigate('/dias');
+      const b = batch.current;
+      batch.current = { ...EMPTY_BATCH };
+      if (b.saved || b.duplicates) setFinished(b);
+      else navigate('/dias');
     }
   }
 
@@ -88,6 +120,7 @@ export function UploadPage() {
     setDropNotice(list?.length && !images.length ? 'Lo que soltaste no tiene imágenes (png, jpg, webp o heic).' : null);
     if (!images.length) return;
     void readFiles(images).then((f) => {
+      setFinished(null);
       setQueue(f);
       setIndex(0);
     });
@@ -140,6 +173,27 @@ export function UploadPage() {
           onCancel={() => setManual(null)}
           cancelLabel="Cancelar"
         />
+      </section>
+    );
+  }
+
+  if (finished && !current) {
+    return (
+      <section className="page">
+        <h1>Subir capturas</h1>
+        <p role="status">
+          {finished.saved === 1 ? '1 mano guardada' : `${finished.saved} manos guardadas`}
+          {finished.duplicates > 0 && ` · ${finished.duplicates} ya estaba${finished.duplicates === 1 ? '' : 'n'} guardada${finished.duplicates === 1 ? '' : 's'}`}.
+        </p>
+        {finished.review > 0 && (
+          <p className="warning">
+            {finished.review === 1 ? '1 tiene' : `${finished.review} tienen`} algún dato que el lector no pudo confirmar: las encuentras en Manos con la etiqueta "{REVIEW_TAG}".
+          </p>
+        )}
+        <div className="btn-row">
+          <button type="button" className="btn primary" onClick={() => navigate('/manos')}>Ver manos</button>
+          <button type="button" className="btn" onClick={() => setFinished(null)}>Subir más</button>
+        </div>
       </section>
     );
   }
@@ -234,16 +288,10 @@ export function UploadPage() {
           onCancel={next}
         />
       )}
-      {state.status === 'ready' && state.analysis.kind === 'hand' && state.duplicate && (
-        <>
-          <p className="warning">Esta mano ya está guardada.</p>
-          <div className="btn-row">
-            <button type="button" className="btn" onClick={() => navigate(`/manos/${state.duplicate!.id}`)}>Ver mano guardada</button>
-            <button type="button" className="btn" onClick={next}>Siguiente</button>
-          </div>
-        </>
+      {state.status === 'ready' && state.analysis.kind === 'hand' && (
+        <p className="warning">Al lector le faltó algún dato de esta mano: complétalo para guardarla.</p>
       )}
-      {state.status === 'ready' && state.analysis.kind === 'hand' && !state.duplicate && (
+      {state.status === 'ready' && state.analysis.kind === 'hand' && (
         <HandForm key={index} initial={handStateFromDraft(state.analysis.draft)} uncertain={state.analysis.draft.uncertain} onSave={saveHand} onCancel={next} />
       )}
     </section>
