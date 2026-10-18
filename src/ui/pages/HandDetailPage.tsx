@@ -4,18 +4,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useDb } from '../../db/context';
 import { deleteHand, DuplicateHandError, updateHand } from '../../db/repo';
 import { formatCard } from '../../domain/cards';
-import { fmtCny, toLocalInput } from '../../domain/format';
+import { toLocalInput } from '../../domain/format';
 import { allinEv, handLuck, wentToShowdown } from '../../domain/stats';
 import { signClass } from '../format';
 import { CardChip } from '../components/CardChip';
 import { HandForm } from '../components/HandForm';
 import { handStateFromHand } from '../components/handValidation';
 import { useStoredImageUrl } from '../hooks';
+import { useMoney } from '../money';
 
 export function HandDetailPage() {
   const { id = '' } = useParams();
   const db = useDb();
   const navigate = useNavigate();
+  const { fmt } = useMoney();
   const hand = useLiveQuery(() => db.hands.get(id), [db, id]);
   const url = useStoredImageUrl(hand?.imageId);
   const [zoomed, setZoomed] = useState(false);
@@ -56,12 +58,12 @@ export function HandDetailPage() {
               <div className="muted small">Tablero: {hand.board.map(formatCard).join(' ') || '—'}</div>
               <div className="muted small">{toLocalInput(hand.playedAt).replace('T', ' ')}{wentToShowdown(hand) && ' · Showdown'}</div>
             </div>
-            <span className={signClass(hand.heroResultCny)}>{fmtCny(hand.heroResultCny)}</span>
+            <span className={signClass(hand.heroResultCny)}>{fmt(hand.heroResultCny)}</span>
           </div>
           {hand.kind === 'allin' && hand.allin && (
             <div className="notice">
-              All-in en {hand.allin.street} con {Math.round(hand.allin.heroEquity * 100)}% · bote {fmtCny(hand.allin.potContested).replace('+', '')} · pusiste {fmtCny(hand.allin.heroInvested).replace('+', '')}
-              <br />EV {fmtCny(allinEv(hand.allin))} · Suerte {fmtCny(handLuck(hand))}
+              All-in en {hand.allin.street} con {Math.round(hand.allin.heroEquity * 100)}% · bote {fmt(hand.allin.potContested).replace('+', '')} · pusiste {fmt(hand.allin.heroInvested).replace('+', '')}
+              <br />EV {fmt(allinEv(hand.allin))} · Suerte {fmt(handLuck(hand))}
             </div>
           )}
           {hand.tags.length > 0 && <p className="muted">Etiquetas: {hand.tags.join(', ')}</p>}

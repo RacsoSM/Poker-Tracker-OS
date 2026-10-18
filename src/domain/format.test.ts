@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fmtCny, fmtDay, fmtDuration, fmtNum, fromLocalInput, parseDecimal, round2, toLocalInput } from './format';
+import { CNY_VIEW, fmtCny, fmtDay, fmtDuration, fmtMoney, fmtNum, fromLocalInput, parseDecimal, round2, toLocalInput, toView } from './format';
 
 describe('format', () => {
   it('redondea a centavos', () => {
@@ -34,5 +34,18 @@ describe('format', () => {
     expect(fromLocalInput('2026-09-25T11:00:47')).toBe(ms);
     expect(fromLocalInput('2026-09-25T11:00')).toBe(new Date(2026, 8, 25, 11, 0, 0).getTime());
     expect(fromLocalInput('')).toBeNull();
+  });
+});
+
+describe('fmtMoney', () => {
+  it('en CNY es igual que antes', () => {
+    expect(fmtMoney(-13, CNY_VIEW)).toBe('-¥13.00');
+  });
+  it('en USD divide por el cambio y usa $', () => {
+    const usd = { currency: 'USD', cnyPerUsd: 6.69 } as const;
+    expect(fmtMoney(669, usd)).toBe('+$100.00');
+    expect(fmtMoney(-123, usd)).toBe('-$18.39');
+    expect(fmtMoney(0, usd)).toBe('$0.00');
+    expect(toView(66.9, usd)).toBeCloseTo(10);
   });
 });

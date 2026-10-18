@@ -1,22 +1,25 @@
 import { useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { fmtCny, fmtDay } from '../../domain/format';
+import { fmtDay, fmtMoney } from '../../domain/format';
 import { aggregate, allinSeries, cumulativeResult, groupByDay, type Period } from '../../domain/stats';
 import { PeriodFilter } from '../components/PeriodFilter';
 import { StatCards } from '../components/StatCards';
+import { useMoney } from '../money';
 import { usePeriodData } from './DaysPage';
 
 const axis = { stroke: 'var(--muted)', fontSize: 12 };
 const tooltipStyle = { background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' };
-const money = (v: unknown) => fmtCny(Number(v));
 
 export function ChartsPage() {
   const [period, setPeriod] = useState<Period>({ kind: 'month' });
   const d = usePeriodData(period);
+  const { conv, view } = useMoney();
+  // Las series ya vienen convertidas: el tooltip solo les pone el símbolo.
+  const money = (v: unknown) => fmtMoney(Number(v), { ...view, cnyPerUsd: 1 });
   if (!d) return <p className="muted page">Cargando…</p>;
   const days = groupByDay(d.chunks, d.hands, d.settings.dayCutoffHour);
-  const cum = cumulativeResult(days).map((p) => ({ ...p, label: fmtDay(p.day).slice(0, 5) }));
-  const ev = allinSeries(d.hands);
+  const cum = cumulativeResult(days).map((p) => ({ ...p, cum: conv(p.cum), sd: conv(p.sd), nsd: conv(p.nsd), ev: conv(p.ev), label: fmtDay(p.day).slice(0, 5) }));
+  const ev = allinSeries(d.hands).map((p) => ({ ...p, real: conv(p.real), ev: conv(p.ev) }));
   const hasShowdown = days.some((x) => x.showdownHands > 0);
   const hasAllins = days.some((x) => x.allins > 0);
   // Manos de showdown en días sin "My stats": su resultado se restaría a la línea roja sin tener de dónde.

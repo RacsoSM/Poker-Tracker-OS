@@ -26,4 +26,16 @@ describe('SettingsPage', () => {
       expect(s.dayCutoffHour).toBe(5);
     });
   });
+
+  it('el interruptor de USD se guarda al momento, con el cambio editable', async () => {
+    const db = new PtDb(`t-${crypto.randomUUID()}`);
+    render(<DbProvider db={db}><MemoryRouter><SettingsPage /></MemoryRouter></DbProvider>);
+    await userEvent.click(await screen.findByRole('switch', { name: 'Ver todo en dólares (USD)' }));
+    await waitFor(async () => expect((await getSettings(db)).displayCurrency).toBe('USD'));
+    const rate = await screen.findByLabelText('Yuanes por dólar (1 USD = … CNY)');
+    expect(rate).toHaveValue('6.69');
+    await userEvent.clear(rate);
+    await userEvent.type(rate, '7.1');
+    await waitFor(async () => expect((await getSettings(db)).cnyPerUsd).toBe(7.1));
+  });
 });

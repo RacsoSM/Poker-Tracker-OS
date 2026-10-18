@@ -11,6 +11,7 @@ import { HandDetailPage } from './pages/HandDetailPage';
 import { HandsPage } from './pages/HandsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { UploadPage } from './pages/UploadPage';
+import { MoneyProvider } from './money';
 import { VersionBadge } from './VersionBadge';
 import { requestPersistence } from './storage';
 
@@ -21,24 +22,26 @@ export function App() {
   }, []);
   useEffect(() => attachSync(db), [db]);
   return (
-    <HashRouter>
-      <div className="app">
-        <VersionBadge />
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={<Navigate to="/graficas" replace />} />
-            <Route path="/dias" element={<DaysPage />} />
-            <Route path="/dias/:day" element={<DayDetailPage />} />
-            <Route path="/graficas" element={<ChartsPage />} />
-            <Route path="/manos" element={<HandsPage />} />
-            <Route path="/manos/:id" element={<HandDetailPage />} />
-            <Route path="/subir" element={<UploadPage />} />
-            <Route path="/ajustes" element={<SettingsPage />} />
-          </Routes>
-        </main>
-        <Fab />
-        <BottomNav />
-      </div>
-    </HashRouter>
+    <MoneyProvider>
+      <HashRouter>
+        <div className="app">
+          <VersionBadge />
+          <main className="app-main">
+            <Routes>
+              <Route path="/" element={<Navigate to="/graficas" replace />} />
+              <Route path="/dias" element={<DaysPage />} />
+              <Route path="/dias/:day" element={<DayDetailPage />} />
+              <Route path="/graficas" element={<ChartsPage />} />
+              <Route path="/manos" element={<HandsPage />} />
+              <Route path="/manos/:id" element={<HandDetailPage />} />
+              <Route path="/subir" element={<UploadPage />} />
+              <Route path="/ajustes" element={<SettingsPage />} />
+            </Routes>
+          </main>
+          <Fab />
+          <BottomNav />
+        </div>
+      </HashRouter>
+    </MoneyProvider>
   );
 }

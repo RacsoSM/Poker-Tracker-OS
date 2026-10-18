@@ -9,6 +9,24 @@ export function fmtCny(n: number): string {
   return `${sign}¥${Math.abs(n).toFixed(2)}`;
 }
 
+export interface MoneyView { currency: 'CNY' | 'USD'; cnyPerUsd: number }
+export const CNY_VIEW: MoneyView = { currency: 'CNY', cnyPerUsd: 1 };
+
+// Los importes se guardan en CNY; esto los pasa a la moneda en que se quieren ver.
+export function toView(cny: number, v: MoneyView): number {
+  return v.currency === 'USD' ? cny / v.cnyPerUsd : cny;
+}
+
+export function currencySymbol(v: MoneyView): string {
+  return v.currency === 'USD' ? '$' : '¥';
+}
+
+export function fmtMoney(cny: number, v: MoneyView): string {
+  const n = round2(toView(cny, v));
+  const sign = n > 0 ? '+' : n < 0 ? '-' : '';
+  return `${sign}${currencySymbol(v)}${Math.abs(n).toFixed(2)}`;
+}
+
 export function fmtDuration(sec: number): string {
   const s = Math.max(0, Math.round(sec));
   return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;

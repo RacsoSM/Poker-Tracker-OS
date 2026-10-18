@@ -13,6 +13,8 @@ const cardZ = z.object({ rank: rankZ, suit: z.enum(['s', 'h', 'd', 'c']) });
 const stakesZ = z.object({ sb: z.number(), bb: z.number().positive(), straddle: z.number(), gameType: z.literal('fast') });
 const settingsZ = z.object({
   heroName: z.string(), stakes: stakesZ, currency: z.literal('CNY'),
+  // Las copias anteriores no traen la moneda de visualización.
+  displayCurrency: z.enum(['CNY', 'USD']).default('CNY'), cnyPerUsd: z.number().positive().default(6.69),
   dayCutoffHour: z.number().int().min(0).max(23), lastBackupAt: z.number().nullable(),
 });
 const chunkZ = z.object({

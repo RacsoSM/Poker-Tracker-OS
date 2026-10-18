@@ -7,10 +7,17 @@ export type SizeClass = 'board' | 'hole';
 
 export interface Stakes { sb: number; bb: number; straddle: number; gameType: 'fast' }
 
+export type DisplayCurrency = 'CNY' | 'USD';
+
 export interface Settings {
   heroName: string;
   stakes: Stakes;
+  /** Moneda en que se guardan los importes: siempre la de la sala. */
   currency: 'CNY';
+  /** Moneda en que se muestran resultados y estadísticas (los formularios siguen en CNY). */
+  displayCurrency: DisplayCurrency;
+  /** Yuanes por dólar para mostrar en USD. */
+  cnyPerUsd: number;
   dayCutoffHour: number;
   lastBackupAt: number | null;
 }
@@ -57,6 +64,9 @@ export const DEFAULT_SETTINGS: Settings = {
   heroName: 'RacsoSM',
   stakes: { sb: 1, bb: 2, straddle: 4, gameType: 'fast' },
   currency: 'CNY',
+  displayCurrency: 'CNY',
+  // Cambio medio USD/CNY a mediados de octubre de 2026 (≈6.69); se puede ajustar en Ajustes.
+  cnyPerUsd: 6.69,
   dayCutoffHour: 6,
   lastBackupAt: null,
 };

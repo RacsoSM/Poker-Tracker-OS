@@ -20,7 +20,13 @@ const newId = () => crypto.randomUUID();
 export async function getSettings(db: PtDb): Promise<Settings> {
   const row = await db.settings.get('main');
   if (!row) return DEFAULT_SETTINGS;
-  return { heroName: row.heroName, stakes: row.stakes, currency: row.currency, dayCutoffHour: row.dayCutoffHour, lastBackupAt: row.lastBackupAt };
+  return {
+    heroName: row.heroName, stakes: row.stakes, currency: row.currency,
+    // Ajustes guardados antes de poder ver en USD.
+    displayCurrency: row.displayCurrency ?? DEFAULT_SETTINGS.displayCurrency,
+    cnyPerUsd: row.cnyPerUsd ?? DEFAULT_SETTINGS.cnyPerUsd,
+    dayCutoffHour: row.dayCutoffHour, lastBackupAt: row.lastBackupAt,
+  };
 }
 
 export async function saveSettings(db: PtDb, s: Settings): Promise<void> {

@@ -1,15 +1,17 @@
-import { fmtCny, fmtDuration, fmtNum } from '../../domain/format';
+import { fmtDuration, fmtNum } from '../../domain/format';
 import type { Aggregate } from '../../domain/stats';
 import { signClass } from '../format';
+import { useMoney } from '../money';
 
 export function StatCards({ stats }: { stats: Aggregate }) {
+  const { fmt, symbol } = useMoney();
   const cards = [
-    { label: 'Resultado', value: fmtCny(stats.resultCny), cls: signClass(stats.resultCny) },
+    { label: 'Resultado', value: fmt(stats.resultCny), cls: signClass(stats.resultCny) },
     { label: 'Manos', value: String(stats.hands), cls: '' },
     { label: 'Tiempo', value: fmtDuration(stats.durationSec), cls: '' },
-    { label: '¥/h', value: stats.cnyPerHour === null ? '—' : fmtCny(stats.cnyPerHour), cls: signClass(stats.cnyPerHour) },
+    { label: `${symbol}/h`, value: stats.cnyPerHour === null ? '—' : fmt(stats.cnyPerHour), cls: signClass(stats.cnyPerHour) },
     { label: 'bb/100', value: fmtNum(stats.bbPer100, 2), cls: signClass(stats.bbPer100) },
-    { label: 'Real − EV', value: stats.allins ? fmtCny(stats.luckCny) : '—', cls: signClass(stats.allins ? stats.luckCny : null) },
+    { label: 'Real − EV', value: stats.allins ? fmt(stats.luckCny) : '—', cls: signClass(stats.allins ? stats.luckCny : null) },
   ];
   return (
     <div className="stat-cards">

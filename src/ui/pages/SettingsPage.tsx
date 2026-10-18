@@ -52,6 +52,45 @@ function SettingsForm({ settings, onSave }: { settings: Settings; onSave: (s: Se
   );
 }
 
+// El interruptor se aplica al momento; el cambio, en cuanto es un número válido.
+function CurrencySection({ settings, onSave }: { settings: Settings; onSave: (s: Settings) => Promise<void> }) {
+  const [rate, setRate] = useState(String(settings.cnyPerUsd));
+  const usd = settings.displayCurrency === 'USD';
+  const parsed = parseDecimal(rate);
+  return (
+    <>
+      <h2>Moneda</h2>
+      <label className="switch">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={usd}
+          onChange={(e) => void onSave({ ...settings, displayCurrency: e.target.checked ? 'USD' : 'CNY' })}
+        />
+        Ver todo en dólares (USD)
+      </label>
+      {usd && (
+        <label className={`field${parsed !== null && parsed > 0 ? '' : ' flag'}`}>
+          <span>Yuanes por dólar (1 USD = … CNY)</span>
+          <input
+            inputMode="decimal"
+            value={rate}
+            onChange={(e) => {
+              setRate(e.target.value);
+              const v = parseDecimal(e.target.value);
+              if (v !== null && v > 0) void onSave({ ...settings, cnyPerUsd: v });
+            }}
+          />
+        </label>
+      )}
+      <p className="muted small">
+        Los importes se guardan en CNY, como salen en la sala. Las capturas de My stats y los formularios se siguen escribiendo en CNY; lo demás se muestra
+        convertido.{usd && parsed !== null && parsed > 0 && ` ¥100 = $${(100 / parsed).toFixed(2)}.`}
+      </p>
+    </>
+  );
+}
+
 export function SettingsPage() {
   const db = useDb();
   const settings = useSettings();
@@ -87,6 +126,8 @@ export function SettingsPage() {
       <h1>Ajustes</h1>
       {message && <p className="notice" role="status">{message}</p>}
       <SettingsForm key={JSON.stringify(settings)} settings={settings} onSave={async (s) => { await saveSettings(db, s); setMessage('Ajustes guardados.'); }} />
+
+      <CurrencySection settings={settings} onSave={(s) => saveSettings(db, s)} />
 
       <SyncSection />
 
