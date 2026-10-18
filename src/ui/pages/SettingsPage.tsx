@@ -122,7 +122,7 @@ export function SettingsPage() {
       ) : (
         <p className="muted">{persisted ? 'Almacenamiento permanente concedido.' : 'Estado de almacenamiento desconocido.'}</p>
       )}
-      <p className="muted small">Poker Tracker-os v{__APP_VERSION__}</p>
+      <p className="muted small">Poker Tracker-os v{__APP_VERSION__} · {__APP_COMMIT__}</p>
     </section>
   );
 }

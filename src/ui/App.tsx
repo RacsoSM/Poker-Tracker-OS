@@ -11,6 +11,7 @@ import { HandDetailPage } from './pages/HandDetailPage';
 import { HandsPage } from './pages/HandsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { UploadPage } from './pages/UploadPage';
+import { VersionBadge } from './VersionBadge';
 import { requestPersistence } from './storage';
 
 export function App() {
@@ -22,6 +23,7 @@ export function App() {
   return (
     <HashRouter>
       <div className="app">
+        <VersionBadge />
         <main className="app-main">
           <Routes>
             <Route path="/" element={<Navigate to="/graficas" replace />} />

@@ -22,7 +22,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: system
 a { color: inherit; }
 h1 { font-size: 1.4rem; margin: 0 0 12px; }
 h2 { font-size: 1.1rem; margin: 24px 0 8px; }
-.app-main { padding: 16px 16px 96px; max-width: 900px; margin: 0 auto; }
+.app-main { padding: 44px 16px 96px; max-width: 900px; margin: 0 auto; }
 .page { display: flex; flex-direction: column; gap: 12px; }
 .muted { color: var(--muted); }
 .small { font-size: 0.8rem; }
@@ -96,3 +96,12 @@ h2 { font-size: 1.1rem; margin: 24px 0 8px; }
 /* Radios y checkboxes dentro de .field: tamaño nativo, alineados con su texto. */
 .field input[type='radio'], .field input[type='checkbox'] { width: auto; min-height: 0; margin: 0; accent-color: var(--accent); }
 fieldset.field label { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+
+/* Versión, arriba a la derecha. */
+.version { position: fixed; top: calc(8px + env(safe-area-inset-top)); right: 8px; z-index: 12; display: flex; flex-direction: column; align-items: flex-end; }
+.version-badge { position: relative; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font: inherit; font-size: 0.72rem; font-variant-numeric: tabular-nums; cursor: pointer; }
+.version-badge.outdated { color: var(--text); border-color: var(--flag); }
+.version-dot { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--flag); }
+.version-panel { margin-top: 6px; width: min(280px, calc(100vw - 16px)); padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 6px 18px #000a; }
+.version-panel p { margin: 0 0 10px; }
+.version-actions { display: flex; justify-content: flex-end; }
