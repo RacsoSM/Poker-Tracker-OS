@@ -54,13 +54,21 @@ describe('parseHand sobre el fixture real', () => {
     expect(d.heroResultCny).toBe(-156.1);
     expect(d.kind).toBe('allin');
     expect(d.allin).toEqual({ street: 'flop', heroEquity: 0.13, potContested: 347.2, heroInvested: 156.1 });
-    // El OCR leyó el -¥156.10 del héroe con confianza 0: resultado y bote quedan para revisar.
+    // El OCR leyó el -¥156.10 del héroe con confianza 0, pero la columna RIVER cuadra
+    // (+191.10 = 156.10 + 28 + 4 + 2 + 1): los importes están bien leídos.
+    expect(d.uncertain).toEqual([]);
+  });
+
+  it('si la columna RIVER no cuadra, un importe con poca confianza queda para revisar', () => {
+    const drop = (w: { text: string }) => w.text !== '-¥4.00' && w.text !== '¥4.00' && w.text !== '4.00';
+    const d = parseHand({ ...ocr, full: ocr.full.filter(drop), columns: { ...ocr.columns, river: ocr.columns.river.filter(drop) } }, layout, 'HiTeR2504');
+    expect(d.heroResultCny).toBe(-156.1);
     expect(d.uncertain).toEqual(expect.arrayContaining(['heroResultCny', 'allin']));
   });
 
   it('all-in: si falta el importe de otra fila de RIVER, el bote queda marcado como incierto', () => {
-    const river = ocr.columns.river.filter((w) => w.text !== '191.10' && w.text !== '+¥');
-    const d = parseHand({ ...ocr, columns: { ...ocr.columns, river } }, layout, 'HiTeR2504');
+    const drop = (w: { text: string }) => w.text !== '191.10' && w.text !== '+¥' && w.text !== '+¥191.10';
+    const d = parseHand({ ...ocr, full: ocr.full.filter(drop), columns: { ...ocr.columns, river: ocr.columns.river.filter(drop) } }, layout, 'HiTeR2504');
     expect(d.kind).toBe('allin');
     expect(d.uncertain).toContain('allin');
   });

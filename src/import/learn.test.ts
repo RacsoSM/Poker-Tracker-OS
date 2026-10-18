@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { HandValues } from '../domain/types';
 import { emptyHandDraft, type HandDraft } from '../parsers/hand';
+import { GLYPH_VERSION } from '../vision/glyph';
 import { templatesToLearn } from './learn';
 
 const G = '0'.repeat(384);
@@ -22,8 +23,8 @@ describe('templatesToLearn', () => {
       board: [{ rank: '5', suit: 'c' }, { rank: 'J', suit: 'd' }],
     } as unknown as HandValues;
     expect(templatesToLearn(draft, values)).toEqual([
-      { rank: 'J', sizeClass: 'board', glyph: G },
-      { rank: '9', sizeClass: 'hole', glyph: G },
+      { rank: 'J', sizeClass: 'board', glyph: G, v: GLYPH_VERSION },
+      { rank: '9', sizeClass: 'hole', glyph: G, v: GLYPH_VERSION },
     ]);
   });
   it('no aprende del tablero si el usuario cambió su número de cartas', () => {

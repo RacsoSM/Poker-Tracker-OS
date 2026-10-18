@@ -81,15 +81,23 @@ export function detectCards(img: RGBA, maxY: number): CardBlob[] {
     } else if (sizeClass === 'hole' && ratio > 0.5 && ratio <= 1.05 && h >= 0.06 * W) {
       // Dos cartas de asiento del mismo palo superpuestas y fundidas (p. ej. al reescalar se pierde
       // la línea que las separa). La de delante se ve entera (ancho ≈ 0.87 × alto).
-      // Debe ser rectangular (esquinas con color de carta) para no partir avatares redondos.
+      // Debe ser rectangular (esquinas con color de carta) para no partir avatares redondos. En el
+      // móvil las dos cartas no están alineadas al píxel, así que la esquina se busca en un entorno.
       const inset = Math.max(2, Math.round(8 * s));
-      const rectangular = cls[(y1 - inset) * W + x0 + inset] === c && cls[(y0 + inset) * W + x1 - inset] === c;
-      if (!rectangular) continue;
+      const r = Math.max(1, Math.round(inset / 2));
+      const corner = (cx: number, cy: number) => {
+        for (let y = cy - r; y <= cy + r; y++) for (let x = cx - r; x <= cx + r; x++) if (cls[y * W + x] === c) return true;
+        return false;
+      };
+      if (!corner(x0 + inset, y1 - inset) || !corner(x1 - inset, y0 + inset)) continue;
       const rightW = Math.round(h * 0.87);
       const leftW = w - rightW;
       if (leftW >= h * 0.4) {
         out.push({ suit, x: x0, y: y0, w: leftW, h, sizeClass });
         out.push({ suit, x: x0 + leftW, y: y0, w: rightW, h, sizeClass });
+      } else if (w <= h * 1.15) {
+        // Una sola carta, recortada por la placa del nombre hasta quedar casi cuadrada.
+        out.push({ suit, x: x0, y: y0, w, h, sizeClass });
       }
     }
   }

@@ -5,6 +5,7 @@ import {
   addChunk, addHand, addTemplates, deleteChunk, deleteHand, DuplicateHandError, findHandByHandId, findSimilarChunk,
   getSettings, loadTemplates, saveSettings, updateHand,
 } from './repo';
+import { GLYPH_VERSION } from '../vision/glyph';
 
 const newDb = () => new PtDb(`test-${crypto.randomUUID()}`);
 const IMG = { bytes: new Uint8Array([1, 2, 3]), mime: 'image/png', width: 1, height: 1 };
@@ -76,5 +77,17 @@ describe('repo', () => {
     const all = await loadTemplates(db);
     expect(all).toHaveLength(before + 1);
     expect(all.at(-1)).toMatchObject({ rank: 'J', sizeClass: 'board' });
+  });
+
+  it('descarta las plantillas de asiento aprendidas con el recorte anterior', async () => {
+    const db = newDb();
+    const before = (await loadTemplates(db)).length;
+    await addTemplates(db, [
+      { rank: 'J', sizeClass: 'hole', glyph: '0'.repeat(384) },
+      { rank: 'Q', sizeClass: 'hole', glyph: '0'.repeat(384), v: GLYPH_VERSION },
+    ]);
+    const all = await loadTemplates(db);
+    expect(all).toHaveLength(before + 1);
+    expect(all.at(-1)).toMatchObject({ rank: 'Q', sizeClass: 'hole' });
   });
 });

@@ -4,7 +4,13 @@ import type { CardBlob } from './cards';
 
 export const GLYPH_W = 16;
 export const GLYPH_H = 24;
-export const RANK_MATCH_MAX = 0.15;
+// Con la distancia tolerante (abajo), en las capturas de prueba un rango bien leído queda por
+// debajo de 0.1, y un rango sin plantilla se parece al más cercano a partir de 0.12 (3 y 8).
+// Más allá se prefiere no adivinar: el usuario elige la carta y la app aprende.
+export const RANK_MATCH_MAX = 0.11;
+// Sube cuando cambia la forma de recortar el glifo: las plantillas aprendidas con otro recorte
+// ya no se parecen a lo que se extrae ahora.
+export const GLYPH_VERSION = 2;
 
 export type Glyph = Uint8Array;
 export interface RankTemplate { rank: Rank; sizeClass: SizeClass; glyph: Glyph }
@@ -13,9 +19,11 @@ interface Comp { x0: number; y0: number; x1: number; y1: number }
 
 // Recorta la esquina superior izquierda (rango), toma los trazos claros como tinta,
 // descarta componentes pequeños (restos del palo, antialias) y normaliza a 16x24.
+// Las cartas de asiento asoman recortadas por la placa del nombre: su alto visible es menor y el
+// rango ocupa más proporción. Con la mitad, la A perdía las patas y se leía como un 4.
 export function extractGlyph(img: RGBA, card: CardBlob): Glyph | null {
   const cw = Math.min(card.w, Math.round(card.h * 0.62));
-  const ch = Math.round(card.h * 0.5);
+  const ch = Math.round(card.h * (card.sizeClass === 'hole' ? 0.58 : 0.5));
   const ink = new Uint8Array(cw * ch);
   for (let y = 0; y < ch; y++) {
     for (let x = 0; x < cw; x++) {
@@ -64,16 +72,34 @@ export function extractGlyph(img: RGBA, card: CardBlob): Glyph | null {
   return g;
 }
 
+// Fracción de píxeles distintos. Una diferencia no cuenta si a un píxel de distancia los dos
+// glifos sí coinciden: así un trazo desplazado un píxel al reescalar no penaliza.
 export function glyphDistance(a: Glyph, b: Glyph): number {
+  const has = (g: Glyph, x: number, y: number, v: number) => {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx;
+        const yy = y + dy;
+        if (xx >= 0 && yy >= 0 && xx < GLYPH_W && yy < GLYPH_H && g[yy * GLYPH_W + xx] === v) return true;
+      }
+    }
+    return false;
+  };
   let d = 0;
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;
+  for (let y = 0; y < GLYPH_H; y++) {
+    for (let x = 0; x < GLYPH_W; x++) {
+      const i = y * GLYPH_W + x;
+      if (a[i] !== b[i] && !(has(b, x, y, a[i]) && has(a, x, y, b[i]))) d++;
+    }
+  }
   return d / a.length;
 }
 
-export function matchRank(g: Glyph, sizeClass: SizeClass, templates: RankTemplate[]): { rank: Rank; distance: number } | null {
+// Se compara con todas las plantillas, de asiento y comunitarias: el glifo normalizado de un
+// rango es casi igual en los dos tamaños, y así basta con haber visto el rango en uno de ellos.
+export function matchRank(g: Glyph, templates: RankTemplate[]): { rank: Rank; distance: number } | null {
   let best: { rank: Rank; distance: number } | null = null;
   for (const t of templates) {
-    if (t.sizeClass !== sizeClass) continue;
     const distance = glyphDistance(g, t.glyph);
     if (!best || distance < best.distance) best = { rank: t.rank, distance };
   }

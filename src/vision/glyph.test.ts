@@ -26,14 +26,15 @@ describe('glyph', () => {
       const others: RankTemplate[] = labeled
         .filter((o) => o !== l)
         .map((o) => ({ rank: o.rank, sizeClass: o.card.sizeClass, glyph: o.glyph }));
-      const hasTwin = others.some((o) => o.rank === l.rank && o.sizeClass === l.card.sizeClass);
-      const m = matchRank(l.glyph, l.card.sizeClass, others);
+      // Se compara con plantillas de los dos tamaños.
+      const hasTwin = others.some((o) => o.rank === l.rank);
+      const m = matchRank(l.glyph, others);
       if (hasTwin) expect(m?.rank, `${l.rank} en ${l.x},${l.y}`).toBe(l.rank);
       else expect(m, `${l.rank} en ${l.x},${l.y}`).toBeNull();
     }
   });
   it('las semillas reconocen todas las cartas del fixture', () => {
     const seeds = loadSeedTemplates();
-    for (const l of labeled) expect(matchRank(l.glyph, l.card.sizeClass, seeds)?.rank).toBe(l.rank);
+    for (const l of labeled) expect(matchRank(l.glyph, seeds)?.rank).toBe(l.rank);
   });
 });

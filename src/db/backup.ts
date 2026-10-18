@@ -29,7 +29,7 @@ const handZ = z.object({
   tags: z.array(z.string()), note: z.string().optional(), imageId: z.string().optional(), createdAt: z.number(),
 });
 const imageMetaZ = z.object({ id: z.string(), mime: z.string(), width: z.number(), height: z.number(), file: z.string() });
-const templateZ = z.object({ id: z.string(), rank: rankZ, sizeClass: z.enum(['board', 'hole']), glyph: z.string().regex(/^[01]{384}$/) });
+const templateZ = z.object({ id: z.string(), rank: rankZ, sizeClass: z.enum(['board', 'hole']), glyph: z.string().regex(/^[01]{384}$/), v: z.number().optional() });
 const backupZ = z.object({
   schemaVersion: z.literal(BACKUP_SCHEMA_VERSION), exportedAt: z.number(), settings: settingsZ,
   chunks: z.array(chunkZ), hands: z.array(handZ), images: z.array(imageMetaZ), rankTemplates: z.array(templateZ),

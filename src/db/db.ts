@@ -2,7 +2,8 @@ import Dexie, { type Table, type Transaction } from 'dexie';
 import type { Hand, Rank, SessionChunk, Settings, SizeClass, StoredImage } from '../domain/types';
 
 export interface SettingsRow extends Settings { key: 'main' }
-export interface StoredTemplate { id: string; rank: Rank; sizeClass: SizeClass; glyph: string }
+/** `v`: versión del recorte del glifo (`GLYPH_VERSION`); ausente en las aprendidas antes de versionarlo. */
+export interface StoredTemplate { id: string; rank: Rank; sizeClass: SizeClass; glyph: string; v?: number }
 
 export type SyncKind = 'chunk' | 'hand' | 'template' | 'settings';
 /** Un cambio local pendiente de subir a la nube. `imageId` solo se guarda en los borrados, para poder borrar también la captura remota. */

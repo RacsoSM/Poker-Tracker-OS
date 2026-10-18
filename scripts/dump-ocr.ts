@@ -6,6 +6,7 @@ import { createOcrEngine } from '../src/ocr/engine';
 import { nodeOcrPaths } from '../src/ocr/nodePaths';
 import { buildHandLayout } from '../src/parsers/handLayout';
 import { FIXTURES_DIR, fixtureBytes, HAND_PNG, MOBILE_HAND_PNGS, MOBILE_SUMMARY_PNG, SUMMARY_PNG } from '../src/test/fixtures';
+import { MOBILE_TRUTH } from '../src/test/mobileTruth';
 import { loadSeedTemplates } from '../src/vision/seeds';
 
 const engine = await createOcrEngine(nodeOcrPaths());
@@ -15,7 +16,7 @@ for (const png of [SUMMARY_PNG, MOBILE_SUMMARY_PNG]) {
   write(png.replace(/\.png$/, '.ocr.json'), { full: await engine.recognize(fixtureBytes(png), 'block') });
 }
 
-for (const png of [HAND_PNG, ...MOBILE_HAND_PNGS]) {
+for (const png of [HAND_PNG, ...MOBILE_HAND_PNGS, ...MOBILE_TRUTH.map((t) => t.png)]) {
   const handBytes = fixtureBytes(png);
   const full = await engine.recognize(handBytes, 'block');
   const img = decodePng(handBytes);

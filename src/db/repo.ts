@@ -1,6 +1,6 @@
 import { playingDay } from '../domain/stats';
 import { DEFAULT_SETTINGS, type Hand, type HandValues, type SessionChunk, type Settings, type StoredImage } from '../domain/types';
-import { glyphFromString, type RankTemplate } from '../vision/glyph';
+import { GLYPH_VERSION, glyphFromString, type RankTemplate } from '../vision/glyph';
 import { loadSeedTemplates } from '../vision/seeds';
 import type { PtDb, StoredTemplate } from './db';
 
@@ -105,5 +105,8 @@ export async function addTemplates(db: PtDb, ts: Omit<StoredTemplate, 'id'>[]): 
 
 export async function loadTemplates(db: PtDb): Promise<RankTemplate[]> {
   const stored = await db.rankTemplates.toArray();
-  return [...loadSeedTemplates(), ...stored.map((t) => ({ rank: t.rank, sizeClass: t.sizeClass, glyph: glyphFromString(t.glyph) }))];
+  // Las cartas de asiento se recortan distinto desde la versión 2: las aprendidas antes ya no se
+  // parecen a lo que se extrae ahora y solo meterían ruido. Las comunitarias no cambiaron.
+  const current = stored.filter((t) => t.sizeClass === 'board' || t.v === GLYPH_VERSION);
+  return [...loadSeedTemplates(), ...current.map((t) => ({ rank: t.rank, sizeClass: t.sizeClass, glyph: glyphFromString(t.glyph) }))];
 }

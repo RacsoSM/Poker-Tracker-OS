@@ -42,4 +42,13 @@ describe('analyzeFile sobre capturas del móvil', () => {
       expect(a.draft.allin).toEqual({ street: 'turn', heroEquity: 0.95, potContested: 290.3, heroInvested: 143.65 });
     }
   });
+
+  it('mano con acciones en el river y pérdida en rosa', async () => {
+    const a = await analyzeFile(file('mobile-hand-06.png'), deps());
+    expect(a.kind).toBe('hand');
+    if (a.kind === 'hand') {
+      expect(a.draft).toMatchObject({ heroPosition: 'SB', heroResultCny: -123, kind: 'study', uncertain: [] });
+      expect(a.draft.heroCards).toEqual([{ rank: '7', suit: 's' }, { rank: '7', suit: 'c' }]);
+    }
+  });
 });
