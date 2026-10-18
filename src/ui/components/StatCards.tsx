@@ -9,7 +9,7 @@ export function StatCards({ stats }: { stats: Aggregate }) {
   const cards = [
     { label: 'Resultado', value: fmt(stats.resultCny), cls: signClass(stats.resultCny) },
     // Lo mismo que la línea naranja: el resultado con cada all-in cambiado por su EV.
-    { label: 'Ajustado a EV', value: stats.allins ? fmt(adjusted) : '—', cls: signClass(stats.allins ? adjusted : null) },
+    { label: 'Si fuera justo', value: stats.allins ? fmt(adjusted) : '—', cls: signClass(stats.allins ? adjusted : null) },
     { label: 'Manos', value: String(stats.hands), cls: '' },
     { label: 'Tiempo', value: fmtDuration(stats.durationSec), cls: '' },
     { label: `${symbol}/h`, value: stats.cnyPerHour === null ? '—' : fmt(stats.cnyPerHour), cls: signClass(stats.cnyPerHour) },
