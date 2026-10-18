@@ -8,13 +8,13 @@ export function StatCards({ stats }: { stats: Aggregate }) {
   const adjusted = round2(stats.resultCny - stats.luckCny);
   const cards = [
     { label: 'Resultado', value: fmt(stats.resultCny), cls: signClass(stats.resultCny) },
-    // Lo mismo que la línea naranja: el resultado con cada all-in cambiado por su EV.
+    // Lo mismo que la línea naranja: el resultado con cada all-in cambiado por su EV (sin la varianza).
     { label: 'Si fuera justo', value: stats.allins ? fmt(adjusted) : '—', cls: signClass(stats.allins ? adjusted : null) },
     { label: 'Manos', value: String(stats.hands), cls: '' },
     { label: 'Tiempo', value: fmtDuration(stats.durationSec), cls: '' },
     { label: `${symbol}/h`, value: stats.cnyPerHour === null ? '—' : fmt(stats.cnyPerHour), cls: signClass(stats.cnyPerHour) },
     { label: 'bb/100', value: fmtNum(stats.bbPer100, 2), cls: signClass(stats.bbPer100) },
-    { label: 'Real − EV', value: stats.allins ? fmt(stats.luckCny) : '—', cls: signClass(stats.allins ? stats.luckCny : null) },
+    { label: 'Varianza all-in', value: stats.allins ? fmt(stats.luckCny) : '—', cls: signClass(stats.allins ? stats.luckCny : null) },
   ];
   return (
     <div className="stat-cards">

@@ -13,7 +13,7 @@ Lee con OCR, **dentro de tu móvil**, las capturas de "My stats" y las manos des
   - *My stats* → se lee resultado, manos y duración. Revisa la fecha y la hora (sale del archivo) y toca **Guardar**.
   - *Mano descargada* → se leen tus cartas, posición, tablero, resultado y, si fuiste all-in, tu equity y el bote. Los campos en **amarillo** son los que el lector no pudo confirmar: revísalos.
   - Si la app no reconoce el valor de una carta, elígelo con el selector. La app **aprende** esa carta para la próxima vez.
-- **Días:** tabla por día de juego (de 06:00 a 06:00, configurable) con tramos, manos, tiempo, resultado, ¥/h, bb/100, all-ins y "real − EV". Toca un día para ver el detalle.
+- **Días:** tabla por día de juego (de 06:00 a 06:00, configurable) con tramos, manos, tiempo, resultado, ¥/h, bb/100, all-ins y "Varianza all-in". Toca un día para ver el detalle.
 - **Gráficas:** resultado acumulado y all-ins real vs EV.
 - **Manos:** tu biblioteca de manos para estudiar, con etiquetas y notas.
 - **Ajustes:** tu nombre en la mesa (**RacsoSM**), stakes, hora de corte y **copia de seguridad**.
@@ -23,7 +23,7 @@ Tus datos viven solo en el navegador del móvil. Exporta una copia cada semana d
 
 ## Qué calcula
 - **bb/100** = (resultado / BB) / manos × 100, con BB = ¥2 (el straddle no cuenta como BB).
-- **EV de all-in** = equity × bote disputado − lo que pusiste. **Real − EV** es tu suerte en esos all-ins.
+- **EV de all-in** = equity × bote disputado − lo que pusiste. **Varianza all-in** = real − EV: tu suerte en esos all-ins. **Si fuera justo** = resultado − varianza all-in.
 - El resultado del día sale solo de las capturas "My stats". Las manos subidas solo suman al EV.
 
 ## Desarrollo

@@ -7,10 +7,10 @@ import { StatCards } from './StatCards';
 const card = (label: string) => screen.getByText(label).nextElementSibling;
 
 describe('StatCards', () => {
-  it('si fuera justo = resultado − (real − EV)', () => {
+  it('si fuera justo = resultado − varianza all-in', () => {
     const stats = { ...aggregate([], []), resultCny: 150, luckCny: 200, allins: 3 };
     render(<StatCards stats={stats} />);
-    expect(card('Real − EV')).toHaveTextContent('+¥200.00');
+    expect(card('Varianza all-in')).toHaveTextContent('+¥200.00');
     expect(card('Si fuera justo')).toHaveTextContent('-¥50.00');
     expect(card('Si fuera justo')).toHaveClass('neg');
   });

@@ -28,7 +28,7 @@ export function DaysTable({ days, total }: { days: DayStats[]; total: Aggregate 
         <thead>
           <tr>
             <th className="sticky">Fecha</th><th>Tramos</th><th>Manos</th><th>Tiempo</th><th>Resultado</th>
-            <th>{symbol}/h</th><th>bb/100</th><th>All-ins</th><th>Real − EV</th>
+            <th>{symbol}/h</th><th>bb/100</th><th>All-ins</th><th>Varianza all-in</th>
           </tr>
         </thead>
         <tbody>
