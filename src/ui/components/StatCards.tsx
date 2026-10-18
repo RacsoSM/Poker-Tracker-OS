@@ -1,12 +1,15 @@
-import { fmtDuration, fmtNum } from '../../domain/format';
+import { fmtDuration, fmtNum, round2 } from '../../domain/format';
 import type { Aggregate } from '../../domain/stats';
 import { signClass } from '../format';
 import { useMoney } from '../money';
 
 export function StatCards({ stats }: { stats: Aggregate }) {
   const { fmt, symbol } = useMoney();
+  const adjusted = round2(stats.resultCny - stats.luckCny);
   const cards = [
     { label: 'Resultado', value: fmt(stats.resultCny), cls: signClass(stats.resultCny) },
+    // Lo mismo que la línea naranja: el resultado con cada all-in cambiado por su EV.
+    { label: 'Ajustado a EV', value: stats.allins ? fmt(adjusted) : '—', cls: signClass(stats.allins ? adjusted : null) },
     { label: 'Manos', value: String(stats.hands), cls: '' },
     { label: 'Tiempo', value: fmtDuration(stats.durationSec), cls: '' },
     { label: `${symbol}/h`, value: stats.cnyPerHour === null ? '—' : fmt(stats.cnyPerHour), cls: signClass(stats.cnyPerHour) },
