@@ -19,6 +19,11 @@ describe('StatCards', () => {
     expect(card('Coolers (6)')).toHaveTextContent('-¥1200.00');
     expect(card('Sin coolers')).toHaveTextContent('-¥400.00');
   });
+  it('sin coolers ni flips = resultado − lo de las manos con cualquiera de las dos marcas', () => {
+    render(<StatCards stats={{ ...aggregate([], []), resultCny: -1600, coolers: 2, coolerCny: -900, flips: 3, flipCny: -500, coolerOrFlipCny: -1300 }} />);
+    expect(card('Flips (3)')).toHaveTextContent('-¥500.00');
+    expect(card('Sin coolers ni flips')).toHaveTextContent('-¥300.00');
+  });
   it('sin all-ins no hay nada que ajustar', () => {
     render(<StatCards stats={{ ...aggregate([], []), resultCny: 150 }} />);
     expect(card('Si fuera justo')).toHaveTextContent('—');

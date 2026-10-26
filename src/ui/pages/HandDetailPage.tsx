@@ -5,7 +5,7 @@ import { useDb } from '../../db/context';
 import { deleteHand, DuplicateHandError, setHandTag, updateHand } from '../../db/repo';
 import { formatCard } from '../../domain/cards';
 import { toLocalInput } from '../../domain/format';
-import { allinEv, COOLER_TAG, handLuck, wentToShowdown, WELL_PLAYED_TAG } from '../../domain/stats';
+import { allinEv, COOLER_TAG, FLIP_TAG, handLuck, wentToShowdown, WELL_PLAYED_TAG } from '../../domain/stats';
 import type { Hand } from '../../domain/types';
 import { signClass } from '../format';
 import { CardChip } from '../components/CardChip';
@@ -17,6 +17,7 @@ import { useMoney } from '../money';
 
 const MARKS = [
   { tag: COOLER_TAG, cls: 'cooler', off: 'Marcar como cooler', on: '❄ Es un cooler' },
+  { tag: FLIP_TAG, cls: 'flip', off: 'Marcar como flip', on: '◐ Es un flip' },
   { tag: WELL_PLAYED_TAG, cls: 'well-played', off: 'La volvería a jugar igual', on: '✓ La volvería a jugar igual' },
 ];
 const MARK_TAGS = MARKS.map((m) => m.tag);
