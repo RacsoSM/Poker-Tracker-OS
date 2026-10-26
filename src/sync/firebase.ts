@@ -1,7 +1,7 @@
 import { initializeApp, type FirebaseOptions } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import {
-  collection, doc, getDoc, getDocs, getFirestore, limit, orderBy, query, serverTimestamp, setDoc, Timestamp, where, writeBatch,
+  collection, doc, getCountFromServer, getDoc, getDocs, getFirestore, limit, orderBy, query, serverTimestamp, setDoc, Timestamp, where, writeBatch,
   type Firestore,
 } from 'firebase/firestore';
 import type { SyncKind } from '../db/db';
@@ -70,6 +70,10 @@ export function createFirestoreRemote(uid: string): Remote {
         const v = d.data();
         return { kind: v.kind as SyncKind, id: v.id as string, json: v.json as string, deleted: v.deleted as boolean, cursor: cursorOf(v.updatedAt as Timestamp) };
       });
+    },
+
+    async countRecords(after) {
+      return (await getCountFromServer(query(records, where('updatedAt', '>', timestampOf(after))))).data().count;
     },
 
     async putImage(id, img: RemoteImage) {

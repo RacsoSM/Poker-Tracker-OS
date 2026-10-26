@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { SyncProgress } from '../../sync/engine';
 import { signIn, signOut, syncNow, useSync } from '../../sync/runner';
 
 const EMAIL_KEY = 'pt-sync-email';
@@ -41,6 +42,7 @@ export function SyncSection() {
             Conectado como {sync.email}.{' '}
             {sync.status === 'syncing' ? 'Sincronizando…' : sync.lastSyncAt ? `Última sincronización: ${new Date(sync.lastSyncAt).toLocaleTimeString('es-MX')}.` : ''}
           </p>
+          {sync.status === 'syncing' && sync.progress && <SyncProgressBar progress={sync.progress} />}
           {sync.error && <p className="warning" role="alert">{sync.error}</p>}
           <div className="btn-row">
             <button type="button" className="btn primary" disabled={sync.status === 'syncing'} onClick={() => void syncNow()}>Sincronizar ahora</button>
@@ -75,5 +77,28 @@ export function SyncSection() {
         </form>
       )}
     </>
+  );
+}
+
+function SyncProgressBar({ progress: { phase, done, total } }: { progress: SyncProgress }) {
+  const label = phase === 'push' ? 'Subiendo cambios' : 'Descargando de la nube';
+  const pct = total ? Math.round((done / total) * 100) : undefined;
+  return (
+    <div className="sync-progress">
+      <div className="sync-progress-label small muted">
+        <span>{label}</span>
+        <span>{total ? `${done} de ${total} · ${pct}%` : `${done}…`}</span>
+      </div>
+      <div
+        className={`sync-progress-track${total ? '' : ' indeterminate'}`}
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={total || undefined}
+        aria-valuenow={total ? done : undefined}
+      >
+        <div className="sync-progress-fill" style={pct === undefined ? undefined : { width: `${pct}%` }} />
+      </div>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndP
 import { liveQuery } from 'dexie';
 import { useSyncExternalStore } from 'react';
 import type { PtDb } from '../db/db';
-import { syncOnce } from './engine';
+import { syncOnce, type SyncProgress } from './engine';
 import { auth, createFirestoreRemote } from './firebase';
 
 export interface SyncState {
@@ -11,9 +11,11 @@ export interface SyncState {
   status: 'idle' | 'syncing' | 'error';
   error: string | null;
   lastSyncAt: number | null;
+  /** Avance de la sync en curso; `null` mientras no hay nada que subir ni bajar. */
+  progress: SyncProgress | null;
 }
 
-let state: SyncState = { configured: auth !== null, email: null, status: 'idle', error: null, lastSyncAt: null };
+let state: SyncState = { configured: auth !== null, email: null, status: 'idle', error: null, lastSyncAt: null, progress: null };
 const listeners = new Set<() => void>();
 function set(patch: Partial<SyncState>) {
   state = { ...state, ...patch };
@@ -40,13 +42,13 @@ export function syncNow(): Promise<void> {
   if (!attached || !user) return Promise.resolve();
   if (running) return running;
   const db = attached;
-  set({ status: 'syncing', error: null });
+  set({ status: 'syncing', error: null, progress: null });
   running = (async () => {
     try {
-      await syncOnce(db, createFirestoreRemote(user.uid), user.uid);
-      set({ status: 'idle', lastSyncAt: Date.now() });
+      await syncOnce(db, createFirestoreRemote(user.uid), user.uid, (progress) => set({ progress }));
+      set({ status: 'idle', lastSyncAt: Date.now(), progress: null });
     } catch (e) {
-      set({ status: 'error', error: friendly(e) });
+      set({ status: 'error', error: friendly(e), progress: null });
     } finally {
       running = null;
     }

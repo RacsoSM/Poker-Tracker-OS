@@ -9,6 +9,8 @@ export interface Remote {
   putRecords(rows: Pick<RemoteRecord, 'kind' | 'id' | 'json' | 'deleted'>[]): Promise<void>;
   /** Registros modificados después de `after` (null = desde el principio), del más viejo al más nuevo. */
   pullRecords(after: string | null, limit: number): Promise<RemoteRecord[]>;
+  /** Cuántos registros devolvería `pullRecords` desde `after`, para la barra de progreso. Opcional. */
+  countRecords?(after: string | null): Promise<number>;
   putImage(id: string, image: RemoteImage): Promise<void>;
   getImage(id: string): Promise<RemoteImage | null>;
   deleteImage(id: string): Promise<void>;

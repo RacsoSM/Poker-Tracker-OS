@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PtDb } from '../db/db';
 import { addChunk, addHand, deleteChunk, saveSettings, updateHand } from '../db/repo';
 import { DEFAULT_SETTINGS, type HandValues } from '../domain/types';
-import { pull, syncOnce } from './engine';
+import { pull, syncOnce, type SyncProgress } from './engine';
 import type { Remote, RemoteImage, RemoteRecord } from './remote';
 
 function memoryRemote(): Remote & { records: RemoteRecord[]; images: Map<string, RemoteImage> } {
@@ -122,6 +122,24 @@ describe('sync', () => {
     await syncOnce(phone, remote, 'u1');
     await syncOnce(pc, remote, 'u1');
     expect((await pc.settings.get('main'))?.heroName).toBe('Otro');
+  });
+
+  it('informa cuánto lleva al subir y al bajar', async () => {
+    const remote = { ...memoryRemote(), countRecords: async () => 3 };
+    const phone = newDb();
+    const pc = newDb();
+    for (let i = 0; i < 3; i++) await addChunk(phone, { ...CHUNK, resultCny: i }, IMG);
+
+    const up: SyncProgress[] = [];
+    await syncOnce(phone, remote, 'u1', (p) => up.push(p));
+    expect(up[0]).toEqual({ phase: 'push', done: 0, total: 3 });
+    expect(up.filter((p) => p.phase === 'push').at(-1)).toEqual({ phase: 'push', done: 3, total: 3 });
+
+    const down: SyncProgress[] = [];
+    await syncOnce(pc, remote, 'u1', (p) => down.push(p));
+    expect(down[0]).toEqual({ phase: 'pull', done: 0, total: 3 });
+    expect(down.at(-1)).toEqual({ phase: 'pull', done: 3, total: 3 });
+    expect(down.map((p) => p.done)).toEqual([...down.map((p) => p.done)].sort((a, b) => a - b));
   });
 
   it('si la subida se corta a mitad, la siguiente sync sigue donde iba', async () => {
