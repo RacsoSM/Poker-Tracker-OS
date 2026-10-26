@@ -1,4 +1,4 @@
-import { COOLER_TAG, playingDay } from '../domain/stats';
+import { playingDay } from '../domain/stats';
 import { DEFAULT_SETTINGS, type Hand, type HandValues, type SessionChunk, type Settings, type StoredImage } from '../domain/types';
 import { GLYPH_VERSION, glyphFromString, type RankTemplate } from '../vision/glyph';
 import { loadSeedTemplates } from '../vision/seeds';
@@ -96,13 +96,13 @@ export async function updateHand(db: PtDb, id: string, values: HandValues): Prom
   });
 }
 
-/** Marca o desmarca la mano como cooler sin tocar el resto de sus datos. */
-export async function setCooler(db: PtDb, id: string, cooler: boolean): Promise<void> {
+/** Pone o quita una etiqueta (p. ej. "cooler") sin tocar el resto de los datos de la mano. */
+export async function setHandTag(db: PtDb, id: string, tag: string, on: boolean): Promise<void> {
   await db.transaction('rw', db.hands, async () => {
     const current = await db.hands.get(id);
     if (!current) return;
-    const tags = current.tags.filter((t) => t !== COOLER_TAG);
-    await db.hands.put({ ...current, tags: cooler ? [...tags, COOLER_TAG] : tags });
+    const tags = current.tags.filter((t) => t !== tag);
+    await db.hands.put({ ...current, tags: on ? [...tags, tag] : tags });
   });
 }
 

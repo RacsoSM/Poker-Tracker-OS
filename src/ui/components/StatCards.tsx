@@ -19,6 +19,8 @@ export function StatCards({ stats }: { stats: Aggregate }) {
     // Las manos que marcaste como cooler: cuánto se fue en ellas y cómo queda el resultado sin ellas.
     { label: stats.coolers ? `Coolers (${stats.coolers})` : 'Coolers', value: stats.coolers ? fmt(stats.coolerCny) : '—', cls: signClass(stats.coolers ? stats.coolerCny : null) },
     { label: 'Sin coolers', value: stats.coolers ? fmt(withoutCoolers) : '—', cls: signClass(stats.coolers ? withoutCoolers : null) },
+    // Manos que volverías a jugar igual: lo que se fue (o se ganó) jugando bien.
+    { label: stats.wellPlayed ? `Bien jugadas (${stats.wellPlayed})` : 'Bien jugadas', value: stats.wellPlayed ? fmt(stats.wellPlayedCny) : '—', cls: signClass(stats.wellPlayed ? stats.wellPlayedCny : null) },
   ];
   return (
     <div className="stat-cards">

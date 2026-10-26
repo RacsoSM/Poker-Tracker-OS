@@ -19,6 +19,7 @@ export function HandsPage() {
   if (!settings || !hands) return <p className="muted page">Cargando…</p>;
   const range = periodRange(period, playingDay(Date.now(), settings.dayCutoffHour));
   const list = filterHands(hands, { kind, position, tag, range }, settings.dayCutoffHour);
+  const ids = list.map((h) => h.id);
   return (
     <section className="page">
       <h1>Manos</h1>
@@ -48,7 +49,7 @@ export function HandsPage() {
       </div>
       <PeriodFilter value={period} onChange={setPeriod} />
       <p className="muted small">{list.length} manos</p>
-      <div className="list">{list.map((h) => <HandRow key={h.id} hand={h} />)}</div>
+      <div className="list">{list.map((h) => <HandRow key={h.id} hand={h} list={ids} />)}</div>
     </section>
   );
 }
