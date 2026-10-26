@@ -1,7 +1,7 @@
 import { initializeApp, type FirebaseOptions } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import {
-  collection, deleteDoc, doc, getDoc, getDocs, getFirestore, limit, orderBy, query, serverTimestamp, setDoc, Timestamp, where, writeBatch,
+  collection, doc, getDoc, getDocs, getFirestore, limit, orderBy, query, serverTimestamp, setDoc, Timestamp, where, writeBatch,
   type Firestore,
 } from 'firebase/firestore';
 import type { SyncKind } from '../db/db';
@@ -74,9 +74,8 @@ export function createFirestoreRemote(uid: string): Remote {
 
     async putImage(id, img: RemoteImage) {
       const parts = Math.max(1, Math.ceil(img.bytes.length / IMAGE_PART_BYTES));
-      for (let i = 0; i < parts; i++) {
-        await setDoc(doc(partsOf(id), String(i)), { b64: toBase64(img.bytes.subarray(i * IMAGE_PART_BYTES, (i + 1) * IMAGE_PART_BYTES)) });
-      }
+      await Promise.all(Array.from({ length: parts }, (_, i) =>
+        setDoc(doc(partsOf(id), String(i)), { b64: toBase64(img.bytes.subarray(i * IMAGE_PART_BYTES, (i + 1) * IMAGE_PART_BYTES)) })));
       // La ficha va al final: mientras no exista, nadie intenta leer una imagen a medio subir.
       await setDoc(imageDoc(id), { mime: img.mime, width: img.width, height: img.height, parts });
     },
@@ -85,12 +84,9 @@ export function createFirestoreRemote(uid: string): Remote {
       const meta = await getDoc(imageDoc(id));
       if (!meta.exists()) return null;
       const { mime, width, height, parts } = meta.data() as { mime: string; width: number; height: number; parts: number };
-      const chunks: Uint8Array[] = [];
-      for (let i = 0; i < parts; i++) {
-        const part = await getDoc(doc(partsOf(id), String(i)));
-        if (!part.exists()) return null;
-        chunks.push(fromBase64(part.data().b64 as string));
-      }
+      const snaps = await Promise.all(Array.from({ length: parts }, (_, i) => getDoc(doc(partsOf(id), String(i)))));
+      if (snaps.some((p) => !p.exists())) return null;
+      const chunks = snaps.map((p) => fromBase64(p.data()!.b64 as string));
       const bytes = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
       let offset = 0;
       for (const c of chunks) {
@@ -104,8 +100,10 @@ export function createFirestoreRemote(uid: string): Remote {
       const meta = await getDoc(imageDoc(id));
       if (!meta.exists()) return;
       const parts = (meta.data() as { parts: number }).parts;
-      for (const p of (await getDocs(partsOf(id))).docs.slice(0, Math.max(parts, 1) + 5)) await deleteDoc(p.ref);
-      await deleteDoc(imageDoc(id));
+      const batch = writeBatch(fs);
+      for (const p of (await getDocs(partsOf(id))).docs.slice(0, Math.max(parts, 1) + 5)) batch.delete(p.ref);
+      batch.delete(imageDoc(id));
+      await batch.commit();
     },
   };
 }
