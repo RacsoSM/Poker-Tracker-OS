@@ -1,17 +1,20 @@
 import { Link } from 'react-router-dom';
-import { fmtDay, fmtDuration, fmtNum } from '../../domain/format';
+import { fmtDay, fmtDuration, fmtNum, round2 } from '../../domain/format';
 import type { Aggregate, DayStats } from '../../domain/stats';
 import { signClass } from '../format';
 import { useMoney } from '../money';
 
 function StatCells({ s }: { s: Aggregate }) {
   const { fmt } = useMoney();
+  const withoutCoolers = s.coolers ? round2(s.resultCny - s.coolerCny) : null;
   return (
     <>
       <td>{s.chunks}</td>
       <td>{s.hands}</td>
       <td>{fmtDuration(s.durationSec)}</td>
       <td className={signClass(s.resultCny)}>{fmt(s.resultCny)}</td>
+      <td className={signClass(s.coolers ? s.coolerCny : null)}>{s.coolers ? fmt(s.coolerCny) : '—'}</td>
+      <td className={signClass(withoutCoolers)}>{withoutCoolers === null ? '—' : fmt(withoutCoolers)}</td>
       <td className={signClass(s.cnyPerHour)}>{s.cnyPerHour === null ? '—' : fmt(s.cnyPerHour)}</td>
       <td className={signClass(s.bbPer100)}>{fmtNum(s.bbPer100, 2)}</td>
       <td>{s.allins}</td>
@@ -28,6 +31,7 @@ export function DaysTable({ days, total }: { days: DayStats[]; total: Aggregate 
         <thead>
           <tr>
             <th className="sticky">Fecha</th><th>Tramos</th><th>Manos</th><th>Tiempo</th><th>Resultado</th>
+            <th>Coolers</th><th>Sin coolers</th>
             <th>{symbol}/h</th><th>bb/100</th><th>All-ins</th><th>Real − EV</th>
           </tr>
         </thead>

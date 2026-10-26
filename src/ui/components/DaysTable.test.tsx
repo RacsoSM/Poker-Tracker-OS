@@ -6,7 +6,7 @@ import { aggregate, type DayStats } from '../../domain/stats';
 import { DbProvider } from '../../db/context';
 import { PtDb } from '../../db/db';
 import { saveSettings } from '../../db/repo';
-import { DEFAULT_SETTINGS } from '../../domain/types';
+import { DEFAULT_SETTINGS, type Hand } from '../../domain/types';
 import { MoneyProvider } from '../money';
 import { DaysTable } from './DaysTable';
 
@@ -23,6 +23,24 @@ describe('DaysTable', () => {
     expect(within(rows[1]).getByText('00:02:13')).toBeInTheDocument();
     expect(within(rows[1]).getByText('-36.11')).toBeInTheDocument();
     expect(within(rows[2]).getByText('Total')).toBeInTheDocument();
+  });
+
+  it('muestra lo de los coolers y el resultado sin ellos; sin coolers, guiones', () => {
+    const cooler: Hand = {
+      id: 'h', handId: '1', playedAt: 0, heroPosition: 'BTN', heroCards: [{ rank: 'A', suit: 's' }, { rank: 'A', suit: 'd' }],
+      board: [], heroResultCny: -200, kind: 'study', tags: ['cooler'], createdAt: 0,
+    };
+    const day: DayStats = { day: '2026-09-25', ...aggregate([{ ...chunk, resultCny: -250 }], [cooler]) };
+    const empty: DayStats = { day: '2026-09-24', ...aggregate([chunk], []) };
+    render(<MemoryRouter><DaysTable days={[day, empty]} total={aggregate([chunk], [])} /></MemoryRouter>);
+    const head = within(screen.getAllByRole('row')[0]).getAllByRole('columnheader').map((th) => th.textContent);
+    const cells = (row: number) => within(screen.getAllByRole('row')[row]).getAllByRole('cell');
+    const col = (name: string) => head.indexOf(name);
+    expect(cells(1)[col('Coolers')]).toHaveTextContent('-¥200.00');
+    expect(cells(1)[col('Sin coolers')]).toHaveTextContent('-¥50.00');
+    expect(cells(1)[col('Sin coolers')]).toHaveClass('neg');
+    expect(cells(2)[col('Coolers')]).toHaveTextContent('—');
+    expect(cells(2)[col('Sin coolers')]).toHaveTextContent('—');
   });
 
   it('en USD convierte los importes con el cambio de los ajustes; bb/100 no cambia', async () => {
