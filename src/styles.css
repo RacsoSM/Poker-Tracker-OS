@@ -96,6 +96,8 @@ h2 { font-size: 1.1rem; margin: 24px 0 8px; }
 .mark-toggle.cooler.on { border-color: #7dd3fc; background: #0c2a3a; }
 .kind.well-played, .mark-toggle.well-played.on { color: #86efac; }
 .mark-toggle.well-played.on { border-color: #86efac; background: #0d2e1a; }
+.kind.flip, .mark-toggle.flip.on { color: #c4b5fd; }
+.mark-toggle.flip.on { border-color: #c4b5fd; background: #241b3d; }
 .hand-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .hand-nav .btn { text-decoration: none; flex: 1; max-width: 160px; }
 .hand-nav .btn[aria-disabled='true'] { opacity: 0.35; }

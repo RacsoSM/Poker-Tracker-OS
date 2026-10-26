@@ -70,6 +70,18 @@ describe('aggregate', () => {
     expect(a.showdownHands).toBe(2);
     expect(a.showdownCny).toBe(-116.1);
   });
+  it('suma aparte los flips y no cuenta dos veces una mano que es cooler y flip', () => {
+    const a = aggregate([], [
+      hand({ heroResultCny: -500, tags: ['cooler'] }),
+      hand({ heroResultCny: 300, tags: ['flip'] }),
+      hand({ heroResultCny: -200, tags: ['flip', 'cooler'] }),
+      hand({ heroResultCny: -50, tags: [] }),
+    ]);
+    expect(a.flips).toBe(2);
+    expect(a.flipCny).toBe(100);
+    expect(a.coolerCny).toBe(-700);
+    expect(a.coolerOrFlipCny).toBe(-400);
+  });
   it('suma aparte las manos que se volverían a jugar igual', () => {
     const a = aggregate([], [
       hand({ heroResultCny: -300, tags: ['bien jugada'] }),
