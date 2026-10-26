@@ -1,10 +1,24 @@
 /// <reference lib="webworker" />
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
-import { registerRoute } from 'workbox-routing';
-import { CacheFirst } from 'workbox-strategies';
+import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from 'workbox-precaching';
+import { NavigationRoute, registerRoute } from 'workbox-routing';
+import { CacheFirst, NetworkFirst } from 'workbox-strategies';
 import { SHARED_CACHE } from './sharedCache';
 
 declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: Array<{ url: string; revision: string | null }> };
+
+// La página se pide primero a la red: así un deploy nuevo o un cambio en Netlify se ve al abrir la app,
+// sin esperar a que cambie el precache. Sin conexión se usa la última que llegó o, si no hay, la del precache.
+// Va antes de precacheAndRoute porque las rutas se prueban en el orden en que se registran.
+const pages = new NetworkFirst({ cacheName: 'pages', networkTimeoutSeconds: 4 });
+registerRoute(
+  new NavigationRoute(async (options) => {
+    try {
+      return await pages.handle(options);
+    } catch {
+      return (await matchPrecache('/index.html')) ?? Response.error();
+    }
+  }),
+);
 
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
