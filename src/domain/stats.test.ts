@@ -70,6 +70,14 @@ describe('aggregate', () => {
     expect(a.showdownHands).toBe(2);
     expect(a.showdownCny).toBe(-116.1);
   });
+  it('suma aparte las manos que se volverían a jugar igual', () => {
+    const a = aggregate([], [
+      hand({ heroResultCny: -300, tags: ['bien jugada'] }),
+      hand({ kind: 'study', allin: undefined, heroResultCny: -100, tags: ['bien jugada', 'cooler'] }),
+    ]);
+    expect(a.wellPlayed).toBe(2);
+    expect(a.wellPlayedCny).toBe(-400);
+  });
   it('suma aparte lo que se fue en las manos marcadas como cooler', () => {
     const a = aggregate([chunk({ resultCny: -1600 })], [
       hand({ heroResultCny: -800, tags: ['cooler'] }),
@@ -78,6 +86,7 @@ describe('aggregate', () => {
     ]);
     expect(a.coolers).toBe(2);
     expect(a.coolerCny).toBe(-1200);
+    expect(a.wellPlayed).toBe(0);
     expect(a.resultCny).toBe(-1600);
   });
 });

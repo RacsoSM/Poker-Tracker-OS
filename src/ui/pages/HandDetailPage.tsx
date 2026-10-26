@@ -1,20 +1,75 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useDb } from '../../db/context';
-import { deleteHand, DuplicateHandError, setCooler, updateHand } from '../../db/repo';
+import { deleteHand, DuplicateHandError, setHandTag, updateHand } from '../../db/repo';
 import { formatCard } from '../../domain/cards';
 import { toLocalInput } from '../../domain/format';
-import { allinEv, COOLER_TAG, handLuck, isCooler, wentToShowdown } from '../../domain/stats';
+import { allinEv, COOLER_TAG, handLuck, wentToShowdown, WELL_PLAYED_TAG } from '../../domain/stats';
+import type { Hand } from '../../domain/types';
 import { signClass } from '../format';
 import { CardChip } from '../components/CardChip';
 import { HandForm } from '../components/HandForm';
+import type { HandListState } from '../components/HandRow';
 import { handStateFromHand } from '../components/handValidation';
 import { useStoredImageUrl } from '../hooks';
 import { useMoney } from '../money';
 
+const MARKS = [
+  { tag: COOLER_TAG, cls: 'cooler', off: 'Marcar como cooler', on: '❄ Es un cooler' },
+  { tag: WELL_PLAYED_TAG, cls: 'well-played', off: 'La volvería a jugar igual', on: '✓ La volvería a jugar igual' },
+];
+const MARK_TAGS = MARKS.map((m) => m.tag);
+
+/** Anterior y siguiente en la lista de la que se vino; si se abrió directo, en orden cronológico entre todas las manos. */
+function useHandOrder(): string[] | undefined {
+  const db = useDb();
+  const fromList = (useLocation().state as HandListState | null)?.ids;
+  const all = useLiveQuery(async () => (fromList ? null : await db.hands.orderBy('playedAt').primaryKeys()), [db, fromList]);
+  return fromList ?? all ?? undefined;
+}
+
+function HandNav({ id, ids }: { id: string; ids: string[] | undefined }) {
+  const location = useLocation();
+  if (!ids) return null;
+  const i = ids.indexOf(id);
+  if (i < 0 || ids.length < 2) return null;
+  // `replace` para que "atrás" vuelva a la lista y no recorra mano por mano.
+  const go = (to: string | undefined, label: string) =>
+    to ? <Link className="btn" to={`/manos/${to}`} state={location.state} replace>{label}</Link> : <span className="btn" aria-disabled="true">{label}</span>;
+  return (
+    <nav className="hand-nav" aria-label="Navegar entre manos">
+      {go(ids[i - 1], '← Anterior')}
+      <span className="muted small">{i + 1} de {ids.length}</span>
+      {go(ids[i + 1], 'Siguiente →')}
+    </nav>
+  );
+}
+
+function MarkButtons({ hand }: { hand: Hand }) {
+  const db = useDb();
+  return (
+    <div className="btn-row">
+      {MARKS.map((m) => {
+        const on = hand.tags.includes(m.tag);
+        return (
+          <button key={m.tag} type="button" className={`btn mark-toggle ${m.cls}${on ? ' on' : ''}`} aria-pressed={on} onClick={() => void setHandTag(db, hand.id, m.tag, !on)}>
+            {on ? m.on : m.off}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function HandDetailPage() {
   const { id = '' } = useParams();
+  const order = useHandOrder(); // aquí y no en el detalle, para que la barra no parpadee al cambiar de mano
+  // `key`: al pasar a otra mano se empieza sin zoom ni edición abiertos.
+  return <HandDetail key={id} id={id} order={order} />;
+}
+
+function HandDetail({ id, order }: { id: string; order: string[] | undefined }) {
   const db = useDb();
   const navigate = useNavigate();
   const { fmt } = useMoney();
@@ -66,15 +121,9 @@ export function HandDetailPage() {
               <br />EV {fmt(allinEv(hand.allin))} · Suerte {fmt(handLuck(hand))}
             </div>
           )}
-          <button
-            type="button"
-            className={`btn cooler-toggle${isCooler(hand) ? ' on' : ''}`}
-            aria-pressed={isCooler(hand)}
-            onClick={() => void setCooler(db, hand.id, !isCooler(hand))}
-          >
-            {isCooler(hand) ? '❄ Es un cooler' : 'Marcar como cooler'}
-          </button>
-          {hand.tags.some((t) => t !== COOLER_TAG) && <p className="muted">Etiquetas: {hand.tags.filter((t) => t !== COOLER_TAG).join(', ')}</p>}
+          <HandNav id={hand.id} ids={order} />
+          <MarkButtons hand={hand} />
+          {hand.tags.some((t) => !MARK_TAGS.includes(t)) && <p className="muted">Etiquetas: {hand.tags.filter((t) => !MARK_TAGS.includes(t)).join(', ')}</p>}
           {hand.note && <p>{hand.note}</p>}
           <div className="btn-row">
             <button type="button" className="btn" onClick={() => setEditing(true)}>Editar</button>

@@ -3,7 +3,7 @@ import { DEFAULT_SETTINGS, type HandValues } from '../domain/types';
 import { PtDb } from './db';
 import {
   addChunk, addHand, addTemplates, deleteChunk, deleteHand, DuplicateHandError, findHandByHandId, findSimilarChunk,
-  getSettings, loadTemplates, saveSettings, setCooler, updateHand,
+  getSettings, loadTemplates, saveSettings, setHandTag, updateHand,
 } from './repo';
 import { GLYPH_VERSION } from '../vision/glyph';
 
@@ -73,10 +73,10 @@ describe('repo', () => {
   it('marca y desmarca una mano como cooler sin perder sus otras etiquetas', async () => {
     const db = newDb();
     const h = await addHand(db, { ...HAND, tags: ['revisar'], note: 'nota' });
-    await setCooler(db, h.id, true);
-    await setCooler(db, h.id, true);
+    await setHandTag(db, h.id, 'cooler', true);
+    await setHandTag(db, h.id, 'cooler', true);
     expect(await db.hands.get(h.id)).toMatchObject({ tags: ['revisar', 'cooler'], note: 'nota' });
-    await setCooler(db, h.id, false);
+    await setHandTag(db, h.id, 'cooler', false);
     expect((await db.hands.get(h.id))?.tags).toEqual(['revisar']);
   });
 

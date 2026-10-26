@@ -55,6 +55,7 @@ export function DayDetailPage() {
   const cutoff = settings.dayCutoffHour;
   const chunks = data.chunks.filter((c) => playingDay(c.startedAt, cutoff) === day).sort((a, b) => a.startedAt - b.startedAt);
   const hands = data.hands.filter((h) => playingDay(h.playedAt, cutoff) === day).sort((a, b) => a.playedAt - b.playedAt);
+  const ids = hands.map((h) => h.id);
   return (
     <section className="page">
       <h1>{fmtDay(day)}</h1>
@@ -62,7 +63,7 @@ export function DayDetailPage() {
       <h2>Tramos ({chunks.length})</h2>
       <div className="list">{chunks.map((c) => <ChunkItem key={c.id} chunk={c} />)}</div>
       <h2>Manos ({hands.length})</h2>
-      <div className="list">{hands.map((h) => <HandRow key={h.id} hand={h} />)}</div>
+      <div className="list">{hands.map((h) => <HandRow key={h.id} hand={h} list={ids} />)}</div>
     </section>
   );
 }

@@ -41,6 +41,13 @@ export function isCooler(h: Hand): boolean {
   return h.tags.includes(COOLER_TAG);
 }
 
+/** Etiqueta para las manos que se perdieron pero el jugador volvería a jugar igual: no es un cooler, es la jugada correcta. */
+export const WELL_PLAYED_TAG = 'bien jugada';
+
+export function isWellPlayed(h: Hand): boolean {
+  return h.tags.includes(WELL_PLAYED_TAG);
+}
+
 export interface Aggregate {
   chunks: number;
   hands: number;
@@ -57,6 +64,9 @@ export interface Aggregate {
   coolers: number;
   /** Suma del resultado de las manos marcadas como cooler. */
   coolerCny: number;
+  wellPlayed: number;
+  /** Suma del resultado de las manos marcadas como "bien jugada". */
+  wellPlayedCny: number;
 }
 
 export interface DayStats extends Aggregate { day: string }
@@ -70,6 +80,7 @@ export function aggregate(chunks: SessionChunk[], hands: Hand[]): Aggregate {
   const allinHands = hands.filter((h) => h.kind === 'allin' && h.allin);
   const showdownHands = hands.filter(wentToShowdown);
   const coolerHands = hands.filter(isCooler);
+  const wellPlayedHands = hands.filter(isWellPlayed);
   return {
     chunks: chunks.length,
     hands: handCount,
@@ -84,6 +95,8 @@ export function aggregate(chunks: SessionChunk[], hands: Hand[]): Aggregate {
     showdownCny: round2(sum(showdownHands.map((h) => h.heroResultCny))),
     coolers: coolerHands.length,
     coolerCny: round2(sum(coolerHands.map((h) => h.heroResultCny))),
+    wellPlayed: wellPlayedHands.length,
+    wellPlayedCny: round2(sum(wellPlayedHands.map((h) => h.heroResultCny))),
   };
 }
 
