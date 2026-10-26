@@ -3,6 +3,9 @@ import type { Hand, SessionChunk } from '../domain/types';
 import type { Remote } from './remote';
 
 export interface SyncResult { pushed: number; pulled: number }
+/** Cuánto lleva la sync. En la bajada `total` es 0 si la nube no supo decir cuánto falta. */
+export interface SyncProgress { phase: 'push' | 'pull'; done: number; total: number }
+export type OnProgress = (p: SyncProgress) => void;
 
 const PAGE = 200;
 const BATCH = 50;
@@ -64,7 +67,7 @@ async function loadLocal(db: PtDb, kind: SyncKind, id: string): Promise<{ record
   }
 }
 
-async function push(db: PtDb, remote: Remote, uid: string): Promise<number> {
+async function push(db: PtDb, remote: Remote, uid: string, onProgress?: OnProgress): Promise<number> {
   const queued = await db.outbox.orderBy('seq').toArray();
   if (!queued.length) return 0;
   // Si un mismo registro cambió varias veces, solo importa el último cambio.
@@ -79,23 +82,30 @@ async function push(db: PtDb, remote: Remote, uid: string): Promise<number> {
   // Se sube por tandas y cada tanda sale de la cola al terminar: si la sync se corta, la siguiente sigue donde iba.
   const entries = [...latest.values()];
   let pushed = 0;
+  let done = 0;
+  const report = () => onProgress?.({ phase: 'push', done, total: entries.length });
+  report();
+  const toRow = async (entry: OutboxRow): Promise<Parameters<Remote['putRecords']>[0][number] | null> => {
+    if (entry.op === 'delete') {
+      return { kind: entry.kind, id: entry.id, json: JSON.stringify({ imageId: entry.imageId ?? null }), deleted: true };
+    }
+    const local = await loadLocal(db, entry.kind, entry.id);
+    if (!local) return null; // ya no existe: su borrado va en una entrada posterior
+    if (local.imageId && !(await metaGet(db, `uploaded:${uid}:${local.imageId}`))) {
+      const img = await db.images.get(local.imageId);
+      if (img) {
+        await remote.putImage(img.id, { bytes: img.bytes, mime: img.mime, width: img.width, height: img.height });
+        await metaSet(db, `uploaded:${uid}:${img.id}`, '1');
+      }
+    }
+    return { kind: entry.kind, id: entry.id, json: JSON.stringify(local.record), deleted: false };
+  };
   for (let i = 0; i < entries.length; i += BATCH) {
     const group = entries.slice(i, i + BATCH);
-    const rows = await mapLimit(group, PARALLEL, async (entry): Promise<Parameters<Remote['putRecords']>[0][number] | null> => {
-      if (entry.op === 'delete') {
-        return { kind: entry.kind, id: entry.id, json: JSON.stringify({ imageId: entry.imageId ?? null }), deleted: true };
-      }
-      const local = await loadLocal(db, entry.kind, entry.id);
-      if (!local) return null; // ya no existe: su borrado va en una entrada posterior
-      if (local.imageId && !(await metaGet(db, `uploaded:${uid}:${local.imageId}`))) {
-        const img = await db.images.get(local.imageId);
-        if (img) {
-          await remote.putImage(img.id, { bytes: img.bytes, mime: img.mime, width: img.width, height: img.height });
-          await metaSet(db, `uploaded:${uid}:${img.id}`, '1');
-        }
-      }
-      return { kind: entry.kind, id: entry.id, json: JSON.stringify(local.record), deleted: false };
-    });
+    const rows = await mapLimit(group, PARALLEL, (entry) => toRow(entry).finally(() => {
+      done++;
+      report();
+    }));
     const ready = rows.filter((r) => r !== null);
     if (ready.length) await remote.putRecords(ready);
     const deletedImages = group.filter((e) => e.op === 'delete' && e.imageId).map((e) => e.imageId!);
@@ -106,13 +116,18 @@ async function push(db: PtDb, remote: Remote, uid: string): Promise<number> {
   return pushed;
 }
 
-export async function pull(db: PtDb, remote: Remote, uid: string): Promise<number> {
+export async function pull(db: PtDb, remote: Remote, uid: string, onProgress?: OnProgress): Promise<number> {
   const cursorKey = `cursor:${uid}`;
   let cursor = (await metaGet(db, cursorKey)) ?? null;
   let applied = 0;
+  // Las capturas son lo lento: dentro de cada página el avance se mide por las que ya bajaron.
+  const total = onProgress ? ((await remote.countRecords?.(cursor).catch(() => null)) ?? 0) : 0;
+  let seen = 0;
+  const report = (done: number) => onProgress?.({ phase: 'pull', done, total: total && Math.max(total, done) });
   for (;;) {
     const page = await remote.pullRecords(cursor, PAGE);
     if (!page.length) break;
+    report(seen);
 
     const pending = new Set((await db.outbox.toArray()).map((r) => `${r.kind}:${r.id}`));
     const incoming = page.filter((r) => !pending.has(`${r.kind}:${r.id}`)); // un cambio local aún sin subir manda sobre la nube
@@ -123,7 +138,8 @@ export async function pull(db: PtDb, remote: Remote, uid: string): Promise<numbe
       if (imageId && !(await db.images.get(imageId))) wanted.add(imageId);
     }
     const ids = [...wanted];
-    const fetched = await mapLimit(ids, PARALLEL, (id) => remote.getImage(id));
+    let got = 0;
+    const fetched = await mapLimit(ids, PARALLEL, (id) => remote.getImage(id).finally(() => report(seen + Math.floor((page.length * ++got) / ids.length))));
     const images = new Map(ids.map((id, i) => [id, fetched[i]]));
 
     await db.applyRemote([db.settings, db.chunks, db.hands, db.images, db.rankTemplates], async () => {
@@ -156,6 +172,8 @@ export async function pull(db: PtDb, remote: Remote, uid: string): Promise<numbe
       }
     });
     applied += incoming.length;
+    seen += page.length;
+    report(seen);
     cursor = page[page.length - 1].cursor;
     await metaSet(db, cursorKey, cursor);
     if (page.length < PAGE) break;
@@ -170,9 +188,9 @@ async function removeWithImage(db: PtDb, table: PtDb['chunks'] | PtDb['hands'], 
   if (row.imageId) await db.images.delete(row.imageId);
 }
 
-export async function syncOnce(db: PtDb, remote: Remote, uid: string): Promise<SyncResult> {
+export async function syncOnce(db: PtDb, remote: Remote, uid: string, onProgress?: OnProgress): Promise<SyncResult> {
   await queueExistingData(db, uid);
-  const pushed = await push(db, remote, uid);
-  const pulled = await pull(db, remote, uid);
+  const pushed = await push(db, remote, uid, onProgress);
+  const pulled = await pull(db, remote, uid, onProgress);
   return { pushed, pulled };
 }

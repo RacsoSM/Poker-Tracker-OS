@@ -42,6 +42,14 @@ h2 { font-size: 1.1rem; margin: 24px 0 8px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
+.sync-progress { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.sync-progress-label { display: flex; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+.sync-progress-track { height: 8px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }
+.sync-progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s ease; }
+.sync-progress-track.indeterminate .sync-progress-fill { width: 30%; animation: sync-indeterminate 1.2s ease-in-out infinite; }
+@keyframes sync-indeterminate { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+@media (prefers-reduced-motion: reduce) { .sync-progress-fill { transition: none; } .sync-progress-track.indeterminate .sync-progress-fill { animation: none; width: 100%; opacity: 0.5; } }
+
 .form { display: flex; flex-direction: column; gap: 12px; }
 .field { display: flex; flex-direction: column; gap: 4px; border: 0; padding: 0; margin: 0; }
 .field > span, .field legend { font-size: 0.8rem; color: var(--muted); }
