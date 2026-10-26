@@ -14,6 +14,11 @@ describe('StatCards', () => {
     expect(card('Si fuera justo')).toHaveTextContent('-¥50.00');
     expect(card('Si fuera justo')).toHaveClass('neg');
   });
+  it('sin coolers = resultado − lo perdido en los coolers', () => {
+    render(<StatCards stats={{ ...aggregate([], []), resultCny: -1600, coolers: 6, coolerCny: -1200 }} />);
+    expect(card('Coolers (6)')).toHaveTextContent('-¥1200.00');
+    expect(card('Sin coolers')).toHaveTextContent('-¥400.00');
+  });
   it('sin all-ins no hay nada que ajustar', () => {
     render(<StatCards stats={{ ...aggregate([], []), resultCny: 150 }} />);
     expect(card('Si fuera justo')).toHaveTextContent('—');

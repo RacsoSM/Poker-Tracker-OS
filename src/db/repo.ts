@@ -1,4 +1,4 @@
-import { playingDay } from '../domain/stats';
+import { COOLER_TAG, playingDay } from '../domain/stats';
 import { DEFAULT_SETTINGS, type Hand, type HandValues, type SessionChunk, type Settings, type StoredImage } from '../domain/types';
 import { GLYPH_VERSION, glyphFromString, type RankTemplate } from '../vision/glyph';
 import { loadSeedTemplates } from '../vision/seeds';
@@ -93,6 +93,16 @@ export async function updateHand(db: PtDb, id: string, values: HandValues): Prom
     const clash = await findHandByHandId(db, values.handId);
     if (clash && clash.id !== id) throw new DuplicateHandError(clash.id);
     await db.hands.put({ ...current, ...values, allin: values.allin });
+  });
+}
+
+/** Marca o desmarca la mano como cooler sin tocar el resto de sus datos. */
+export async function setCooler(db: PtDb, id: string, cooler: boolean): Promise<void> {
+  await db.transaction('rw', db.hands, async () => {
+    const current = await db.hands.get(id);
+    if (!current) return;
+    const tags = current.tags.filter((t) => t !== COOLER_TAG);
+    await db.hands.put({ ...current, tags: cooler ? [...tags, COOLER_TAG] : tags });
   });
 }
 

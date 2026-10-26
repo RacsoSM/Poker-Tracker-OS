@@ -3,7 +3,7 @@ import { DEFAULT_SETTINGS, type HandValues } from '../domain/types';
 import { PtDb } from './db';
 import {
   addChunk, addHand, addTemplates, deleteChunk, deleteHand, DuplicateHandError, findHandByHandId, findSimilarChunk,
-  getSettings, loadTemplates, saveSettings, updateHand,
+  getSettings, loadTemplates, saveSettings, setCooler, updateHand,
 } from './repo';
 import { GLYPH_VERSION } from '../vision/glyph';
 
@@ -68,6 +68,16 @@ describe('repo', () => {
     await expect(updateHand(db, other.id, { ...HAND })).rejects.toBeInstanceOf(DuplicateHandError);
     await updateHand(db, other.id, { ...HAND, handId: '999', note: 'revisar' });
     expect((await db.hands.get(other.id))?.note).toBe('revisar');
+  });
+
+  it('marca y desmarca una mano como cooler sin perder sus otras etiquetas', async () => {
+    const db = newDb();
+    const h = await addHand(db, { ...HAND, tags: ['revisar'], note: 'nota' });
+    await setCooler(db, h.id, true);
+    await setCooler(db, h.id, true);
+    expect(await db.hands.get(h.id)).toMatchObject({ tags: ['revisar', 'cooler'], note: 'nota' });
+    await setCooler(db, h.id, false);
+    expect((await db.hands.get(h.id))?.tags).toEqual(['revisar']);
   });
 
   it('combina semillas y plantillas aprendidas', async () => {

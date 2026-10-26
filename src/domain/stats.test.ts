@@ -70,6 +70,16 @@ describe('aggregate', () => {
     expect(a.showdownHands).toBe(2);
     expect(a.showdownCny).toBe(-116.1);
   });
+  it('suma aparte lo que se fue en las manos marcadas como cooler', () => {
+    const a = aggregate([chunk({ resultCny: -1600 })], [
+      hand({ heroResultCny: -800, tags: ['cooler'] }),
+      hand({ kind: 'study', allin: undefined, heroResultCny: -400, tags: ['revisar', 'cooler'] }),
+      hand({ kind: 'study', allin: undefined, heroResultCny: -200, tags: ['revisar'] }),
+    ]);
+    expect(a.coolers).toBe(2);
+    expect(a.coolerCny).toBe(-1200);
+    expect(a.resultCny).toBe(-1600);
+  });
 });
 
 describe('groupByDay', () => {
