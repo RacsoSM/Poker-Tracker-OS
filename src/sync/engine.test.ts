@@ -123,4 +123,24 @@ describe('sync', () => {
     await syncOnce(pc, remote, 'u1');
     expect((await pc.settings.get('main'))?.heroName).toBe('Otro');
   });
+
+  it('si la subida se corta a mitad, la siguiente sync sigue donde iba', async () => {
+    const remote = memoryRemote();
+    const phone = newDb();
+    for (let i = 0; i < 120; i++) await addChunk(phone, { ...CHUNK, resultCny: i }, IMG);
+    const putRecords = remote.putRecords;
+    let calls = 0;
+    remote.putRecords = async (rows) => {
+      if (++calls === 2) throw new Error('sin conexión');
+      return putRecords(rows);
+    };
+
+    await expect(syncOnce(phone, remote, 'u1')).rejects.toThrow('sin conexión');
+    expect(remote.records).toHaveLength(50);
+    expect(new Set((await phone.outbox.toArray()).map((r) => r.id)).size).toBe(70); // la primera tanda ya salió de la cola
+
+    expect((await syncOnce(phone, remote, 'u1')).pushed).toBe(70);
+    expect(remote.records).toHaveLength(120);
+    expect(remote.images.size).toBe(120);
+  });
 });
