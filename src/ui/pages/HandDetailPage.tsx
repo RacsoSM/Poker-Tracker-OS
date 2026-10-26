@@ -2,10 +2,10 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDb } from '../../db/context';
-import { deleteHand, DuplicateHandError, updateHand } from '../../db/repo';
+import { deleteHand, DuplicateHandError, setCooler, updateHand } from '../../db/repo';
 import { formatCard } from '../../domain/cards';
 import { toLocalInput } from '../../domain/format';
-import { allinEv, handLuck, wentToShowdown } from '../../domain/stats';
+import { allinEv, COOLER_TAG, handLuck, isCooler, wentToShowdown } from '../../domain/stats';
 import { signClass } from '../format';
 import { CardChip } from '../components/CardChip';
 import { HandForm } from '../components/HandForm';
@@ -66,7 +66,15 @@ export function HandDetailPage() {
               <br />EV {fmt(allinEv(hand.allin))} · Suerte {fmt(handLuck(hand))}
             </div>
           )}
-          {hand.tags.length > 0 && <p className="muted">Etiquetas: {hand.tags.join(', ')}</p>}
+          <button
+            type="button"
+            className={`btn cooler-toggle${isCooler(hand) ? ' on' : ''}`}
+            aria-pressed={isCooler(hand)}
+            onClick={() => void setCooler(db, hand.id, !isCooler(hand))}
+          >
+            {isCooler(hand) ? '❄ Es un cooler' : 'Marcar como cooler'}
+          </button>
+          {hand.tags.some((t) => t !== COOLER_TAG) && <p className="muted">Etiquetas: {hand.tags.filter((t) => t !== COOLER_TAG).join(', ')}</p>}
           {hand.note && <p>{hand.note}</p>}
           <div className="btn-row">
             <button type="button" className="btn" onClick={() => setEditing(true)}>Editar</button>

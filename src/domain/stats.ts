@@ -34,6 +34,13 @@ export function wentToShowdown(h: Hand): boolean {
   return h.kind === 'allin' || h.showdown === true;
 }
 
+/** Etiqueta con la que el jugador marca a mano las manos que considera un cooler. */
+export const COOLER_TAG = 'cooler';
+
+export function isCooler(h: Hand): boolean {
+  return h.tags.includes(COOLER_TAG);
+}
+
 export interface Aggregate {
   chunks: number;
   hands: number;
@@ -47,6 +54,9 @@ export interface Aggregate {
   showdownHands: number;
   /** Suma del resultado de las manos subidas que llegaron a showdown. */
   showdownCny: number;
+  coolers: number;
+  /** Suma del resultado de las manos marcadas como cooler. */
+  coolerCny: number;
 }
 
 export interface DayStats extends Aggregate { day: string }
@@ -59,6 +69,7 @@ export function aggregate(chunks: SessionChunk[], hands: Hand[]): Aggregate {
   const hours = durationSec / 3600;
   const allinHands = hands.filter((h) => h.kind === 'allin' && h.allin);
   const showdownHands = hands.filter(wentToShowdown);
+  const coolerHands = hands.filter(isCooler);
   return {
     chunks: chunks.length,
     hands: handCount,
@@ -71,6 +82,8 @@ export function aggregate(chunks: SessionChunk[], hands: Hand[]): Aggregate {
     luckCny: round2(sum(allinHands.map(handLuck))),
     showdownHands: showdownHands.length,
     showdownCny: round2(sum(showdownHands.map((h) => h.heroResultCny))),
+    coolers: coolerHands.length,
+    coolerCny: round2(sum(coolerHands.map((h) => h.heroResultCny))),
   };
 }
 
