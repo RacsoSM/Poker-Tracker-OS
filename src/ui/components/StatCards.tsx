@@ -23,6 +23,8 @@ export function StatCards({ stats }: { stats: Aggregate }) {
     // Las manos que marcaste como cooler o flip: cuánto se fue en ellas y cómo queda el resultado sin ellas.
     { label: stats.coolers ? `Coolers (${stats.coolers})` : 'Coolers', value: stats.coolers ? fmt(stats.coolerCny) : '—', cls: signClass(stats.coolers ? stats.coolerCny : null) },
     { label: stats.flips ? `Flips (${stats.flips})` : 'Flips', value: stats.flips ? fmt(stats.flipCny) : '—', cls: signClass(stats.flips ? stats.flipCny : null) },
+    // Manos que perdiste porque el rival jugó mal y la suerte lo salvó.
+    { label: stats.badBeats ? `Bad beats (${stats.badBeats})` : 'Bad beats', value: stats.badBeats ? fmt(stats.badBeatCny) : '—', cls: signClass(stats.badBeats ? stats.badBeatCny : null) },
     { label: 'Sin coolers', value: stats.coolers ? fmt(withoutCoolers) : '—', cls: signClass(stats.coolers ? withoutCoolers : null) },
     { label: 'Sin coolers ni flips', value: marked ? fmt(withoutCoolersOrFlips) : '—', cls: signClass(marked ? withoutCoolersOrFlips : null) },
   ];

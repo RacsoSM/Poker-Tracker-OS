@@ -8,6 +8,7 @@ function StatCells({ s }: { s: Aggregate }) {
   const { fmt } = useMoney();
   const withoutCoolers = s.coolers ? round2(s.resultCny - s.coolerCny) : null;
   const withoutBoth = s.coolers + s.flips ? round2(s.resultCny - s.coolerOrFlipCny) : null;
+  const withoutAll = s.coolers + s.flips + s.badBeats ? round2(s.resultCny - s.coolerFlipOrBadBeatCny) : null;
   return (
     <>
       <td>{s.chunks}</td>
@@ -16,8 +17,10 @@ function StatCells({ s }: { s: Aggregate }) {
       <td className={signClass(s.resultCny)}>{fmt(s.resultCny)}</td>
       <td className={signClass(s.coolers ? s.coolerCny : null)}>{s.coolers ? fmt(s.coolerCny) : '—'}</td>
       <td className={signClass(s.flips ? s.flipCny : null)}>{s.flips ? fmt(s.flipCny) : '—'}</td>
+      <td className={signClass(s.badBeats ? s.badBeatCny : null)}>{s.badBeats ? fmt(s.badBeatCny) : '—'}</td>
       <td className={signClass(withoutCoolers)}>{withoutCoolers === null ? '—' : fmt(withoutCoolers)}</td>
       <td className={signClass(withoutBoth)}>{withoutBoth === null ? '—' : fmt(withoutBoth)}</td>
+      <td className={signClass(withoutAll)}>{withoutAll === null ? '—' : fmt(withoutAll)}</td>
       <td className={signClass(s.cnyPerHour)}>{s.cnyPerHour === null ? '—' : fmt(s.cnyPerHour)}</td>
       <td className={signClass(s.bbPer100)}>{fmtNum(s.bbPer100, 2)}</td>
       <td>{s.allins}</td>
@@ -34,7 +37,7 @@ export function DaysTable({ days, total }: { days: DayStats[]; total: Aggregate 
         <thead>
           <tr>
             <th className="sticky">Fecha</th><th>Tramos</th><th>Manos</th><th>Tiempo</th><th>Resultado</th>
-            <th>Coolers</th><th>Flips</th><th>Sin coolers</th><th>Sin coolers ni flips</th>
+            <th>Coolers</th><th>Flips</th><th>Bad beats</th><th>Sin coolers</th><th>Sin coolers ni flips</th><th>Sin coolers, flips ni bad beats</th>
             <th>{symbol}/h</th><th>bb/100</th><th>All-ins</th><th>Real − EV</th>
           </tr>
         </thead>
