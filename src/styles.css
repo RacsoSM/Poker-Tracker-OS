@@ -98,6 +98,8 @@ h2 { font-size: 1.1rem; margin: 24px 0 8px; }
 .mark-toggle.well-played.on { border-color: #86efac; background: #0d2e1a; }
 .kind.flip, .mark-toggle.flip.on { color: #c4b5fd; }
 .mark-toggle.flip.on { border-color: #c4b5fd; background: #241b3d; }
+.kind.bad-beat, .mark-toggle.bad-beat.on { color: #fdba74; }
+.mark-toggle.bad-beat.on { border-color: #fdba74; background: #3a2210; }
 .hand-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .hand-nav .btn { text-decoration: none; flex: 1; max-width: 160px; }
 .hand-nav .btn[aria-disabled='true'] { opacity: 0.35; }

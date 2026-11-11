@@ -90,6 +90,16 @@ describe('aggregate', () => {
     expect(a.wellPlayed).toBe(2);
     expect(a.wellPlayedCny).toBe(-400);
   });
+  it('suma aparte los bad beats', () => {
+    const a = aggregate([], [
+      hand({ heroResultCny: -900, tags: ['bad beat'] }),
+      hand({ heroResultCny: -100, tags: ['bad beat', 'revisar'] }),
+      hand({ heroResultCny: -50, tags: ['cooler'] }),
+    ]);
+    expect(a.badBeats).toBe(2);
+    expect(a.badBeatCny).toBe(-1000);
+    expect(a.coolerCny).toBe(-50);
+  });
   it('suma aparte lo que se fue en las manos marcadas como cooler', () => {
     const a = aggregate([chunk({ resultCny: -1600 })], [
       hand({ heroResultCny: -800, tags: ['cooler'] }),

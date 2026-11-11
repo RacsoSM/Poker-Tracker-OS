@@ -55,6 +55,13 @@ export function isWellPlayed(h: Hand): boolean {
   return h.tags.includes(WELL_PLAYED_TAG);
 }
 
+/** Etiqueta para los bad beats: el rival llegó con una mano que no debía (pagar un 4bet con T9o) y la suerte lo salvó. */
+export const BAD_BEAT_TAG = 'bad beat';
+
+export function isBadBeat(h: Hand): boolean {
+  return h.tags.includes(BAD_BEAT_TAG);
+}
+
 export interface Aggregate {
   chunks: number;
   hands: number;
@@ -77,6 +84,9 @@ export interface Aggregate {
   flips: number;
   /** Suma del resultado de las manos marcadas como flip. */
   flipCny: number;
+  badBeats: number;
+  /** Suma del resultado de las manos marcadas como bad beat. */
+  badBeatCny: number;
   /** Suma de las manos marcadas como cooler o flip, cada una una sola vez aunque tenga las dos marcas. */
   coolerOrFlipCny: number;
 }
@@ -94,6 +104,7 @@ export function aggregate(chunks: SessionChunk[], hands: Hand[]): Aggregate {
   const coolerHands = hands.filter(isCooler);
   const wellPlayedHands = hands.filter(isWellPlayed);
   const flipHands = hands.filter(isFlip);
+  const badBeatHands = hands.filter(isBadBeat);
   return {
     chunks: chunks.length,
     hands: handCount,
@@ -112,6 +123,8 @@ export function aggregate(chunks: SessionChunk[], hands: Hand[]): Aggregate {
     wellPlayedCny: round2(sum(wellPlayedHands.map((h) => h.heroResultCny))),
     flips: flipHands.length,
     flipCny: round2(sum(flipHands.map((h) => h.heroResultCny))),
+    badBeats: badBeatHands.length,
+    badBeatCny: round2(sum(badBeatHands.map((h) => h.heroResultCny))),
     coolerOrFlipCny: round2(sum(hands.filter((h) => isCooler(h) || isFlip(h)).map((h) => h.heroResultCny))),
   };
 }
