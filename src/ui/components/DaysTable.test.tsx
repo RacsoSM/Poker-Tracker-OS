@@ -43,6 +43,23 @@ describe('DaysTable', () => {
     expect(cells(2)[col('Sin coolers')]).toHaveTextContent('—');
   });
 
+  it('muestra los bad beats y el resultado sin coolers, flips ni bad beats', () => {
+    const base: Omit<Hand, 'id' | 'handId' | 'heroResultCny' | 'tags'> = {
+      playedAt: 0, heroPosition: 'BTN', heroCards: [{ rank: 'A', suit: 's' }, { rank: 'A', suit: 'd' }], board: [], kind: 'study', createdAt: 0,
+    };
+    const hands: Hand[] = [
+      { ...base, id: 'a', handId: '1', heroResultCny: -300, tags: ['bad beat'] },
+      { ...base, id: 'b', handId: '2', heroResultCny: -100, tags: ['cooler'] },
+    ];
+    const day: DayStats = { day: '2026-09-25', ...aggregate([{ ...chunk, resultCny: -450 }], hands) };
+    render(<MemoryRouter><DaysTable days={[day]} total={aggregate([chunk], [])} /></MemoryRouter>);
+    const head = within(screen.getAllByRole('row')[0]).getAllByRole('columnheader').map((th) => th.textContent);
+    const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell');
+    expect(cells[head.indexOf('Bad beats')]).toHaveTextContent('-¥300.00');
+    expect(cells[head.indexOf('Sin coolers ni flips')]).toHaveTextContent('-¥350.00');
+    expect(cells[head.indexOf('Sin coolers, flips ni bad beats')]).toHaveTextContent('-¥50.00');
+  });
+
   it('en USD convierte los importes con el cambio de los ajustes; bb/100 no cambia', async () => {
     const db = new PtDb(`t-${crypto.randomUUID()}`);
     await saveSettings(db, { ...DEFAULT_SETTINGS, displayCurrency: 'USD', cnyPerUsd: 6.5 });

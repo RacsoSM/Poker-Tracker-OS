@@ -100,6 +100,16 @@ describe('aggregate', () => {
     expect(a.badBeatCny).toBe(-1000);
     expect(a.coolerCny).toBe(-50);
   });
+  it('sin coolers, flips ni bad beats: cada mano marcada se descuenta una sola vez', () => {
+    const a = aggregate([], [
+      hand({ heroResultCny: -900, tags: ['bad beat', 'cooler'] }),
+      hand({ heroResultCny: 300, tags: ['flip'] }),
+      hand({ heroResultCny: -100, tags: ['bad beat'] }),
+      hand({ heroResultCny: -50, tags: [] }),
+    ]);
+    expect(a.coolerOrFlipCny).toBe(-600);
+    expect(a.coolerFlipOrBadBeatCny).toBe(-700);
+  });
   it('suma aparte lo que se fue en las manos marcadas como cooler', () => {
     const a = aggregate([chunk({ resultCny: -1600 })], [
       hand({ heroResultCny: -800, tags: ['cooler'] }),

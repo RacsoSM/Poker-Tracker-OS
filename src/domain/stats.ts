@@ -89,6 +89,8 @@ export interface Aggregate {
   badBeatCny: number;
   /** Suma de las manos marcadas como cooler o flip, cada una una sola vez aunque tenga las dos marcas. */
   coolerOrFlipCny: number;
+  /** Lo mismo, contando también los bad beats. */
+  coolerFlipOrBadBeatCny: number;
 }
 
 export interface DayStats extends Aggregate { day: string }
@@ -126,6 +128,7 @@ export function aggregate(chunks: SessionChunk[], hands: Hand[]): Aggregate {
     badBeats: badBeatHands.length,
     badBeatCny: round2(sum(badBeatHands.map((h) => h.heroResultCny))),
     coolerOrFlipCny: round2(sum(hands.filter((h) => isCooler(h) || isFlip(h)).map((h) => h.heroResultCny))),
+    coolerFlipOrBadBeatCny: round2(sum(hands.filter((h) => isCooler(h) || isFlip(h) || isBadBeat(h)).map((h) => h.heroResultCny))),
   };
 }
 
